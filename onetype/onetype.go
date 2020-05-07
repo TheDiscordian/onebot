@@ -4,6 +4,20 @@ package onetype
 
 type UUID string // A unique identifier
 
+var (
+	// TODO Make these concurrent-safe
+	Protocols map[string]Protocol // Key is protocol name (ex: "discord")
+	Plugins   map[string]Plugin   // Key is plugin name (ex: "admin_tools")
+	Commands  map[string]Command  // Key is command trigger (ex: "help")
+	Monitors  []Monitor
+
+	Db Database // Db is configured via config file only
+
+	DbEngine    string
+	PluginDir   string
+	ProtocolDir string
+)
+
 type Database interface {
 	Get(table, key string) ([]byte, error)           // Retrieves value by key directly
 	Search(table, field, key string) ([]byte, error) // Searches for key in field, containing key (IE: field:'username', key:'admin'), using an index if exists.
@@ -31,30 +45,40 @@ type Message interface {
 
 // Sender contains information about who and where a message came from
 type Sender interface {
-	DisplayName() string  // Display name of the sender
-	Username() string     // Username of the sender (often unknown, should return an empty string)
-	UUID() UUID           // Unique identifier for the sender
+	DisplayName() string // Display name of the sender
+	Username() string    // Username of the sender (often unknown, should return an empty string)
+	UUID() UUID          // Unique identifier for the sender
+	// Picture // TODO The avatar of the location
 	Location() Location   // The location where this sender sent the message from
 	Protocol() string     // Returns the protocol name responsible for the sender
 	Send(msg Message)     // Sends a Message to the sender
 	SendText(text string) // Sends text to the sender
 }
 
+/* PROTOCOL SPEC
+
+Plugins should contain a function named "Load() Protocol".
+
+*/
+
 // Protocol contains information about a protocol plugin
 type Protocol interface {
-	Init(db *Database)                                                // Allow the protocol to run any init code and connect to the db
-	Name() string                                                     // The name of the protocol, used in the protocol map (should be same as filename, minus extension)
-	LongName() string                                                 // The display name of the protocol
-	Version() int                                                     // The version of the protocol
-	UpdateTriggers(commands map[string]*Command, monitors []*Monitor) // This is called this whenever a new plugin is loaded or unloaded. It passes every single loaded command and monitor.
-	NewMessage(raw []byte) Message                                    // Returns a new Message object built from []byte
-	Send(to UUID, msg Message)                                        // Sends a Message to a location
-	SendText(to UUID, text string)                                    // Sends text to a location
-	Remove()                                                          // Called when the protocol is about to be terminated
+	Name() string                  // The name of the protocol, used in the protocol map (should be same as filename, minus extension)
+	LongName() string              // The display name of the protocol
+	Version() int                  // The version of the protocol
+	NewMessage(raw []byte) Message // Returns a new Message object built from []byte
+	Send(to UUID, msg Message)     // Sends a Message to a location
+	SendText(to UUID, text string) // Sends text to a location
+	Remove()                       // Called when the protocol is about to be terminated
 }
 
+/* PLUGIN SPEC
+
+Plugins should contain a function named "Load() Plugin"
+
+*/
+
 type Plugin interface {
-	Init(db *Database)                // Allow the plugin to run any init code and connect to the db
 	Name() string                     // The name of the plugin, used in the plugin map (should be same as filename, minus extension)
 	LongName() string                 // The display name of the plugin
 	Version() int                     // The version of the plugin
