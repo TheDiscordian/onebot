@@ -20,7 +20,7 @@ func LoadPlugin(name string) {
 		Error.Printf("Failed to locate load function for %s: %s\n", name, err)
 	}
 	plug := Plugin(loadF.(func() Plugin)())
-	Debug.Println(plug.LongName())
+	Info.Printf("Loaded '%s' version %d.\n", plug.LongName(), plug.Version())
 	// TODO
 }
 

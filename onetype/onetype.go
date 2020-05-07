@@ -5,7 +5,7 @@ package onetype
 type UUID string // A unique identifier
 
 var (
-	// TODO Make these concurrent-safe
+	// TODO Make these concurrent-safe (probably via getters/setters)
 	Protocols map[string]Protocol // Key is protocol name (ex: "discord")
 	Plugins   map[string]Plugin   // Key is plugin name (ex: "admin_tools")
 	Commands  map[string]Command  // Key is command trigger (ex: "help")
@@ -87,8 +87,9 @@ type Plugin interface {
 }
 
 type Monitor interface {
-	OnMessage(from Sender, msg Message)         // Called on every message
-	OnMessageWithText(from Sender, msg Message) // Called on every message containing text
+	OnMessage(from Sender, msg Message)         // Called on every new message
+	OnMessageWithText(from Sender, msg Message) // Called on every new message containing text
+	//    OnMessageUpdate(from Sender, update Message) // Called on message update (IE: edit, reaction)
 	//    OnPresenceUpdate(from Sender, update UserPresence) // Called on user presence update
 	//    OnLocationUpdate(from Location, update LocationPresence) // Called on location update
 }
