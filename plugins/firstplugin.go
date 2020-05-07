@@ -17,8 +17,7 @@ func Load() Plugin {
 	return new(FirstPlugin)
 }
 
-type FirstPlugin struct {
-}
+type FirstPlugin int
 
 func (fp *FirstPlugin) Name() string {
 	return NAME

@@ -2,8 +2,6 @@ package main
 
 /* CONFIG SPEC
 
-Bot user should only have read permissions to config file (unless you'd like plugins to be able to edit the config file)
-
 Config values should use those set in config file until overriden via database entry (IE: value changed via command in
 chat).
 
@@ -61,8 +59,6 @@ DBs should perhaps support conversion to other DBs for portability.
 Plugins may not include a "." or "~" in key names.
 
 LevelDB indexes will be stored as "tableName.indexKey.indexValue", the value contains the key to get the value
-    - First index key will be "tableName.indexKey.." (value is nil)
-    - Last index key will be "tableName.indexKey.~" (value is nil)
 LevelDB values will be stored as "tableName.key", key will be the ID of the object
 LevelDB keys will be generated as regular MongoDB ObjectIDs in bytes, unless explicitly specified
 
