@@ -1,0 +1,12 @@
+[general]
+
+plugin_path = "plugins"
+plugins = []
+
+protocol_path = "protocols"
+protocols = []
+
+[database]
+engine = "leveldb" # valid values are 'leveldb' or 'mongodb'
+
+leveldb_path = "onedb"
