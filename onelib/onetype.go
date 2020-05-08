@@ -128,12 +128,12 @@ func (pm *PluginMap) DeleteAll() {
 // Database represents a database connection. It's meant to be simple, to work for most general usage.
 type Database interface {
 	Get(table, key string) (map[string]interface{}, error)           // Retrieves value by key directly
-    GetString(table, key string) (string, error) // Retrieve a string stored with PutString.
+	GetString(table, key string) (string, error)                     // Retrieve a string stored with PutString.
 	Search(table, field, key string) (map[string]interface{}, error) // Searches for key in field, containing key (IE: field:'username', key:'admin'), using an index if exists.
-	Put(table, data map[string]interface{}) []byte, error       // Inserts data into database, using "_id" field as key, generating one if none exists. Returns key.
-    PutString(table, key, text string) []byte, error // Inserts text at location "key" for retrieval via GetString, returning the internal key used.
-	SetIndex(table, key string) error                // Sets an index on key.
-	Close() error                                    // Terminate a database session (only run if nothing is using the database).
+	Put(table string, data map[string]interface{}) ([]byte, error)   // Inserts data into database, using "_id" field as key, generating one if none exists. Returns key.
+	PutString(table, key, text string) error                         // Inserts text at location "key" for retrieval via GetString
+	SetIndex(table, key string) error                                // Sets an index on key.
+	Close() error                                                    // Terminate a database session (only run if nothing is using the database).
 }
 
 type Location interface {

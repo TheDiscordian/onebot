@@ -20,14 +20,19 @@ func openLevelDB(path string) *levelDB {
 }
 
 // Get retrieves value by key directly
-func (db *levelDB) Get(table, key string) ([]byte, error) {
+func (db *levelDB) Get(table, key string) (map[string]interface{}, error) {
+	return nil, errors.New("Get not implemented on LevelDB.")
+}
+
+// Retrieve a string stored with PutString.
+func (db *levelDB) GetString(table, key string) (string, error) {
 	data, err := db.dB.Get([]byte(fmt.Sprintf("%s.%s", table, key)), nil)
-	return data, err
+	return string(data), err
 }
 
 // Searches for key in field, containing key (IE: field:'username', key:'admin'), using an index if exists. Can be very
 // slow without an index.
-func (db *levelDB) Search(table, field, key string) ([]byte, error) {
+func (db *levelDB) Search(table, field, key string) (map[string]interface{}, error) {
 	if field == "_id" {
 		return db.Get(table, key)
 	} else {
@@ -36,8 +41,13 @@ func (db *levelDB) Search(table, field, key string) ([]byte, error) {
 }
 
 // Inserts value into key, erasing any potential previous value.
-func (db *levelDB) Put(table, key string, value []byte) error {
-	return db.dB.Put([]byte(key), value, nil)
+func (db *levelDB) Put(table string, data map[string]interface{}) ([]byte, error) {
+	return nil, errors.New("Put not implemented on LevelDB.")
+}
+
+// Inserts text at location "key" for retrieval via GetString
+func (db *levelDB) PutString(table, key, text string) error {
+	return db.dB.Put([]byte(key), []byte(text), nil)
 }
 
 // SetIndex sets an index on key. Building an index can take a long time.
