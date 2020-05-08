@@ -31,7 +31,7 @@ func (fp *FirstPlugin) Version() int {
 	return VERSION
 }
 
-func (fp *FirstPlugin) Implements() ([]onelib.Command, onelib.Monitor) {
+func (fp *FirstPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
 	return nil, nil
 }
 

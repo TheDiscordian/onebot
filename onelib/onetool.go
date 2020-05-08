@@ -1,6 +1,7 @@
 package onelib
 
 import (
+	"errors"
 	"fmt"
 	"plugin"
 )
@@ -33,7 +34,23 @@ func LoadPlugins() {
 	}
 }
 
+func UnloadPlugin(name string) error {
+	plug := Plugins.Get(name)
+	if plug == nil {
+		return errors.New(fmt.Sprintf("Plugin '%s' not loaded.", name))
+	}
+	Plugins.Delete(name)
+	commands, monitor := plug.Implements()
+	Commands.DeleteSet(commands)
+	Monitors.Delete(monitor)
+	return nil
+}
+
+// TODO also dump all Commands and Monitors
+// Unloads every plugin, calling their unload routines.
 func UnloadPlugins() {
+	Monitors.DeleteAll()
+	Commands.DeleteAll()
 	Plugins.DeleteAll()
 }
 
@@ -63,6 +80,12 @@ func LoadProtocols() {
 	}
 }
 
+// Unloads every protocol, calling their unload routines.
 func UnloadProtocols() {
 	Protocols.DeleteAll()
+}
+
+// ProcessMessage processes command and monitor triggers, spawning a new goroutine for every trigger.
+func ProcessMessage(msg Message, sender Sender) {
+	// TODO
 }

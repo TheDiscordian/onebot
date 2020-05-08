@@ -10,11 +10,11 @@ import (
 type UUID string // A unique identifier
 
 var (
-	// TODO Make these concurrent-safe (probably via getters/setters) (left: Plugins, Commands, Monitors)
-	Protocols *ProtocolMap       // Key is protocol name (ex: "discord")
-	Plugins   *PluginMap         // Key is plugin name (ex: "admin_tools")
-	Commands  map[string]Command // Key is command trigger (ex: "help")
-	Monitors  []Monitor
+	// TODO Make these concurrent-safe (probably via getters/setters) (left: Commands, Monitors)
+	Protocols *ProtocolMap // Key is protocol name (ex: "discord")
+	Plugins   *PluginMap   // Key is plugin name (ex: "admin_tools")
+	Commands  *CommandMap  // Key is command trigger (ex: "help")
+	Monitors  *MonitorSlice
 
 	Db Database // Db is configured via config file only
 
@@ -30,6 +30,8 @@ var (
 func init() {
 	Protocols = NewProtocolMap()
 	Plugins = NewPluginMap()
+	Commands = NewCommandMap()
+	Monitors = NewMonitorSlice()
 	Quit = make(chan os.Signal)
 }
 
@@ -125,6 +127,108 @@ func (pm *PluginMap) DeleteAll() {
 	pm.lock.Unlock()
 }
 
+// A concurrent-safe map of commands
+type CommandMap struct {
+	commands map[string]Command
+	lock     *sync.RWMutex
+}
+
+// Returns a new concurrent-safe CommandMap
+func NewCommandMap() *CommandMap {
+	cm := &CommandMap{lock: new(sync.RWMutex)}
+	cm.commands = make(map[string]Command, 4)
+	return cm
+}
+
+// Get a command from the CommandMap
+func (cm *CommandMap) Get(commandName string) Command {
+	cm.lock.RLock()
+	command := cm.commands[commandName]
+	cm.lock.RUnlock()
+	return command
+}
+
+// Put a command into the CommandMap
+func (cm *CommandMap) Put(commandName string, command Command) {
+	cm.lock.Lock()
+	cm.commands[commandName] = command
+	cm.lock.Unlock()
+}
+
+// Delete removes the command from the active command list, calling the command's unload method via goroutine
+func (cm *CommandMap) Delete(commandName string) {
+	cm.lock.Lock()
+	delete(cm.commands, commandName)
+	cm.lock.Unlock()
+}
+
+// Delete removes the command from the active command list, calling the command's unload method via goroutine
+func (cm *CommandMap) DeleteSet(set map[string]Command) {
+	cm.lock.Lock()
+	for commandName, _ := range set {
+		delete(cm.commands, commandName)
+	}
+	cm.lock.Unlock()
+}
+
+// DeleteAll removes all commands from the active command list
+func (cm *CommandMap) DeleteAll() {
+	cm.lock.Lock()
+	cm.commands = make(map[string]Command)
+	cm.lock.Unlock()
+}
+
+// A concurrent-safe slice of monitors
+type MonitorSlice struct {
+	monitors []*Monitor
+	lock     *sync.RWMutex
+}
+
+// Returns a new concurrent-safe MonitorSlice
+func NewMonitorSlice() *MonitorSlice {
+	ms := &MonitorSlice{lock: new(sync.RWMutex)}
+	ms.monitors = make([]*Monitor, 0)
+	return ms
+}
+
+// Get copy of monitor slice for reading
+func (ms *MonitorSlice) Get() []*Monitor {
+	ms.lock.RLock()
+	slice := ms.monitors
+	ms.lock.RUnlock()
+	return slice
+}
+
+// Put a monitor into the MonitorSlice
+func (ms *MonitorSlice) Put(monitor *Monitor) {
+	ms.lock.Lock()
+	ms.monitors = append(ms.monitors, monitor)
+	ms.lock.Unlock()
+}
+
+// Delete removes the monitor from the active monitor list
+func (ms *MonitorSlice) Delete(monitor *Monitor) {
+	if monitor == nil {
+		return
+	}
+	ms.lock.Lock()
+	for i, mon := range ms.monitors {
+		if mon == monitor {
+			ms.monitors = append(ms.monitors[:i], ms.monitors[i+1:]...)
+			Debug.Println("Monitor matched + removed") // FIXME Leaving this here to ensure this code accurately matches monitors
+			break
+		}
+	}
+	ms.lock.Unlock()
+}
+
+// DeleteAll removes all monitors from the active monitor list
+func (ms MonitorSlice) DeleteAll() {
+	ms.lock.Lock()
+	ms.monitors = make([]*Monitor, 0)
+	ms.lock.Unlock()
+}
+
 // Database represents a database connection. It's meant to be simple, to work for most general usage.
 type Database interface {
 	Get(table, key string) (map[string]interface{}, error)           // Retrieves value by key directly
@@ -189,19 +293,19 @@ Plugins should contain a function named "Load() Plugin"
 */
 
 type Plugin interface {
-	Name() string                     // The name of the plugin, used in the plugin map (should be same as filename, minus extension)
-	LongName() string                 // The display name of the plugin
-	Version() int                     // The version of the plugin
-	Implements() ([]Command, Monitor) // Returns lists of commands and monitor the plugin implements
-	Remove()                          // Called when the plugin is about to be terminated
+	Name() string                               // The name of the plugin, used in the plugin map (should be same as filename, minus extension)
+	LongName() string                           // The display name of the plugin
+	Version() int                               // The version of the plugin
+	Implements() (map[string]Command, *Monitor) // Returns lists of commands and monitor the plugin implements
+	Remove()                                    // Called when the plugin is about to be terminated
 }
 
-type Monitor interface {
-	OnMessage(from Sender, msg Message)          // Called on every new message
-	OnMessageWithText(from Sender, msg Message)  // Called on every new message containing text
-	OnMessageUpdate(from Sender, update Message) // Called on message update (IE: edit, reaction)
-	//    OnPresenceUpdate(from Sender, update UserPresence) // Called on user presence update
-	//    OnLocationUpdate(from Location, update LocationPresence) // Called on location update
+type Monitor struct {
+	OnMessage         func(from Sender, msg Message)    // Called on every new message
+	OnMessageWithText func(from Sender, msg Message)    // Called on every new message containing text
+	OnMessageUpdate   func(from Sender, update Message) // Called on message update (IE: edit, reaction)
+	//    OnPresenceUpdate func(from Sender, update UserPresence) // Called on user presence update
+	//    OnLocationUpdate func(from Location, update LocationPresence) // Called on location update
 }
 
 type Command func(msg Message, sender Sender)
