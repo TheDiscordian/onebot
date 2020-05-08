@@ -41,12 +41,11 @@ func UnloadPlugin(name string) error {
 	}
 	Plugins.Delete(name)
 	commands, monitor := plug.Implements()
-	Commands.DeleteSet(commands)
 	Monitors.Delete(monitor)
+	Commands.DeleteSet(commands)
 	return nil
 }
 
-// TODO also dump all Commands and Monitors
 // Unloads every plugin, calling their unload routines.
 func UnloadPlugins() {
 	Monitors.DeleteAll()

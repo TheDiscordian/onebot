@@ -10,7 +10,6 @@ import (
 type UUID string // A unique identifier
 
 var (
-	// TODO Make these concurrent-safe (probably via getters/setters) (left: Commands, Monitors)
 	Protocols *ProtocolMap // Key is protocol name (ex: "discord")
 	Plugins   *PluginMap   // Key is plugin name (ex: "admin_tools")
 	Commands  *CommandMap  // Key is command trigger (ex: "help")
@@ -164,6 +163,9 @@ func (cm *CommandMap) Delete(commandName string) {
 
 // Delete removes the command from the active command list, calling the command's unload method via goroutine
 func (cm *CommandMap) DeleteSet(set map[string]Command) {
+	if set == nil {
+		return
+	}
 	cm.lock.Lock()
 	for commandName, _ := range set {
 		delete(cm.commands, commandName)
@@ -230,13 +232,14 @@ func (ms MonitorSlice) DeleteAll() {
 }
 
 // Database represents a database connection. It's meant to be simple, to work for most general usage.
+// TODO LevelDB is ordered and MongoDB supports comparators. Maybe support simple range returns (IE: select users /w money > 50).
 type Database interface {
 	Get(table, key string) (map[string]interface{}, error)           // Retrieves value by key directly
 	GetString(table, key string) (string, error)                     // Retrieve a string stored with PutString.
 	Search(table, field, key string) (map[string]interface{}, error) // Searches for key in field, containing key (IE: field:'username', key:'admin'), using an index if exists.
 	Put(table string, data map[string]interface{}) ([]byte, error)   // Inserts data into database, using "_id" field as key, generating one if none exists. Returns key.
 	PutString(table, key, text string) error                         // Inserts text at location "key" for retrieval via GetString
-	SetIndex(table, key string) error                                // Sets an index on key.
+	SetIndex(table, field string) error                              // Sets an index on field.
 	Close() error                                                    // Terminate a database session (only run if nothing is using the database).
 }
 
