@@ -1,7 +1,7 @@
 [general]
 
 plugin_path = "plugins"
-plugins = []
+plugins = ["firstplugin"]
 
 protocol_path = "protocols"
 protocols = []

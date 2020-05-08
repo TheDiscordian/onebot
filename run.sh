@@ -1,2 +1,4 @@
+#!/bin/sh
 go fmt ./...
-go run *.go
+./buildplugins.sh
+go run -ldflags "-s -w" -trimpath *.go

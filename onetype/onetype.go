@@ -2,21 +2,102 @@ package onetype
 
 // TODO How hard would it be for a plugin with this spec to tag a user on both Matrix and Discord?
 
+import "sync"
+
 type UUID string // A unique identifier
 
 var (
-	// TODO Make these concurrent-safe (probably via getters/setters)
-	Protocols map[string]Protocol // Key is protocol name (ex: "discord")
-	Plugins   map[string]Plugin   // Key is plugin name (ex: "admin_tools")
-	Commands  map[string]Command  // Key is command trigger (ex: "help")
+	// TODO Make these concurrent-safe (probably via getters/setters) (left: Plugins, Commands, Monitors)
+	Protocols *ProtocolMap       // Key is protocol name (ex: "discord")
+	Plugins   *PluginMap         // Key is plugin name (ex: "admin_tools")
+	Commands  map[string]Command // Key is command trigger (ex: "help")
 	Monitors  []Monitor
 
 	Db Database // Db is configured via config file only
 
-	DbEngine    string
-	PluginDir   string
-	ProtocolDir string
+	DbEngine         string
+	PluginDir        string
+	PluginLoadList   []string // Only used for loading the default plugins
+	ProtocolDir      string
+	ProtocolLoadList []string // Only used for loading the default protocols
 )
+
+func init() {
+	Protocols = NewProtocolMap()
+	Plugins = NewPluginMap()
+}
+
+// A concurrent-safe map of protocols
+type ProtocolMap struct {
+	protocols map[string]Protocol
+	lock      *sync.RWMutex
+}
+
+// Returns a new concurrent-safe ProtocolMap
+func NewProtocolMap() *ProtocolMap {
+	pm := &ProtocolMap{lock: new(sync.RWMutex)}
+	pm.protocols = make(map[string]Protocol, 1)
+	return pm
+}
+
+// Get a protocol from the ProtocolMap
+func (pm *ProtocolMap) Get(protocolName string) Protocol {
+	pm.lock.RLock()
+	protocol := pm.protocols[protocolName]
+	pm.lock.RUnlock()
+	return protocol
+}
+
+// Put an already loaded protocol into the ProtocolMap
+func (pm *ProtocolMap) Put(protocolName string, protocol Protocol) {
+	pm.lock.Lock()
+	pm.protocols[protocolName] = protocol
+	pm.lock.Unlock()
+}
+
+// Delete removes the protocol from the active protocol list, calling the protocol's unload method via goroutine
+func (pm *ProtocolMap) Delete(protocolName string) {
+	pm.lock.Lock()
+	go pm.protocols[protocolName].Remove()
+	delete(pm.protocols, protocolName)
+	pm.lock.Unlock()
+}
+
+// A concurrent-safe map of plugins
+type PluginMap struct {
+	plugins map[string]Plugin
+	lock    *sync.RWMutex
+}
+
+// Returns a new concurrent-safe PluginMap
+func NewPluginMap() *PluginMap {
+	pm := &PluginMap{lock: new(sync.RWMutex)}
+	pm.plugins = make(map[string]Plugin, 2)
+	return pm
+}
+
+// Get a plugin from the PluginMap
+func (pm *PluginMap) Get(pluginName string) Plugin {
+	pm.lock.RLock()
+	plugin := pm.plugins[pluginName]
+	pm.lock.RUnlock()
+	return plugin
+}
+
+// Put an already loaded plugin into the PluginMap
+func (pm *PluginMap) Put(pluginName string, plugin Plugin) {
+	pm.lock.Lock()
+	pm.plugins[pluginName] = plugin
+	pm.lock.Unlock()
+}
+
+// Delete removes the plugin from the active plugin list, calling the plugin's unload method via goroutine
+func (pm *PluginMap) Delete(pluginName string) {
+	pm.lock.Lock()
+	go pm.plugins[pluginName].Remove()
+	delete(pm.plugins, pluginName)
+	pm.lock.Unlock()
+}
 
 type Database interface {
 	Get(table, key string) ([]byte, error)           // Retrieves value by key directly
@@ -87,9 +168,9 @@ type Plugin interface {
 }
 
 type Monitor interface {
-	OnMessage(from Sender, msg Message)         // Called on every new message
-	OnMessageWithText(from Sender, msg Message) // Called on every new message containing text
-	//    OnMessageUpdate(from Sender, update Message) // Called on message update (IE: edit, reaction)
+	OnMessage(from Sender, msg Message)          // Called on every new message
+	OnMessageWithText(from Sender, msg Message)  // Called on every new message containing text
+	OnMessageUpdate(from Sender, update Message) // Called on message update (IE: edit, reaction)
 	//    OnPresenceUpdate(from Sender, update UserPresence) // Called on user presence update
 	//    OnLocationUpdate(from Location, update LocationPresence) // Called on location update
 }
