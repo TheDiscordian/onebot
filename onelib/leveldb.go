@@ -47,7 +47,7 @@ func (db *levelDB) Put(table string, data map[string]interface{}) ([]byte, error
 
 // Inserts text at location "key" for retrieval via GetString
 func (db *levelDB) PutString(table, key, text string) error {
-	return db.dB.Put([]byte(key), []byte(text), nil)
+	return db.dB.Put([]byte(fmt.Sprintf("%s.%s", table, key)), []byte(text), nil)
 }
 
 // SetIndex sets an index on key. Building an index can take a long time.
