@@ -21,47 +21,16 @@ Configuration file will be in TOML, whatever version is most convenient.
 */
 
 import (
-	. "github.com/TheDiscordian/onebot/loggers"
-	. "github.com/TheDiscordian/onebot/onetool"
-	. "github.com/TheDiscordian/onebot/onetype"
-	"github.com/pelletier/go-toml"
+	. "github.com/TheDiscordian/onebot/onelib"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
 	NAME    = "OneBot"
 	VERSION = "v1.0.0"
 )
-
-// TODO set default config path
-// Should set all variables unless DB overrides. This also inits DB.
-func LoadConfig() {
-	config, err := toml.LoadFile("onebot.toml")
-
-	if err != nil {
-		Error.Panicln("Error loading config", err.Error())
-	}
-
-	PluginDir = config.Get("general.plugin_path").(string)
-	pluginList := config.Get("general.plugins").([]interface{})
-	PluginLoadList = make([]string, len(pluginList))
-	for i, plugName := range pluginList {
-		PluginLoadList[i] = plugName.(string)
-	}
-
-	ProtocolDir = config.Get("general.protocol_path").(string)
-	protocolList := config.Get("general.protocols").([]interface{})
-	ProtocolLoadList = make([]string, len(protocolList))
-	for i, protoName := range protocolList {
-		ProtocolLoadList[i] = protoName.(string)
-	}
-
-	DbEngine = config.Get("database.engine").(string)
-	if DbEngine == "leveldb" {
-		Db = OpenLevelDB(config.Get("database.leveldb_path").(string))
-	} else {
-		Error.Panicln("database.engine = '%s', only 'leveldb' implemented.", DbEngine)
-	}
-}
 
 /* DATABASE SPEC
 
@@ -85,6 +54,13 @@ func main() {
 	Info.Println("Loading plugins...")
 	LoadPlugins()
 
-	Info.Println("Shutting down...")
-	Db.Close()
+	defer func() {
+		Info.Println("Shutting down...")
+		UnloadPlugins()
+		UnloadProtocols()
+		Db.Close()
+	}()
+
+	signal.Notify(Quit, os.Interrupt, syscall.SIGTERM)
+	<-Quit
 }

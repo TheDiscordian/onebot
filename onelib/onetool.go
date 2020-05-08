@@ -1,9 +1,7 @@
-package onetool
+package onelib
 
 import (
 	"fmt"
-	. "github.com/TheDiscordian/onebot/loggers"
-	. "github.com/TheDiscordian/onebot/onetype"
 	"plugin"
 )
 
@@ -30,9 +28,13 @@ func LoadPlugins() {
 	for _, pluginName := range PluginLoadList {
 		err := LoadPlugin(pluginName)
 		if err != nil {
-			Error.Println("Failed to load plugin:", err)
+			Error.Printf("Failed to load plugin '%s': %v\n", pluginName, err)
 		}
 	}
+}
+
+func UnloadPlugins() {
+	Plugins.DeleteAll()
 }
 
 // LoadProtocol loads a protocol by filename (minus extension)
@@ -56,7 +58,11 @@ func LoadProtocols() {
 	for _, protocolName := range ProtocolLoadList {
 		err := LoadProtocol(protocolName)
 		if err != nil {
-			Error.Println("Failed to load protocol:", err)
+			Error.Printf("Failed to load protocol '%s': %v\n", protocolName, err)
 		}
 	}
+}
+
+func UnloadProtocols() {
+	Protocols.DeleteAll()
 }

@@ -1,8 +1,11 @@
-package onetype
+package onelib
 
 // TODO How hard would it be for a plugin with this spec to tag a user on both Matrix and Discord?
 
-import "sync"
+import (
+	"os"
+	"sync"
+)
 
 type UUID string // A unique identifier
 
@@ -20,11 +23,14 @@ var (
 	PluginLoadList   []string // Only used for loading the default plugins
 	ProtocolDir      string
 	ProtocolLoadList []string // Only used for loading the default protocols
+
+	Quit chan os.Signal // The main thread will watch this to terminate the process
 )
 
 func init() {
 	Protocols = NewProtocolMap()
 	Plugins = NewPluginMap()
+	Quit = make(chan os.Signal)
 }
 
 // A concurrent-safe map of protocols
@@ -63,6 +69,16 @@ func (pm *ProtocolMap) Delete(protocolName string) {
 	pm.lock.Unlock()
 }
 
+// DeleteAll removes all protocols from the active protocol list, calling the protocol's unload method via goroutine
+func (pm *ProtocolMap) DeleteAll() {
+	pm.lock.Lock()
+	for protoName, proto := range pm.protocols {
+		go proto.Remove()
+		delete(pm.protocols, protoName)
+	}
+	pm.lock.Unlock()
+}
+
 // A concurrent-safe map of plugins
 type PluginMap struct {
 	plugins map[string]Plugin
@@ -96,6 +112,16 @@ func (pm *PluginMap) Delete(pluginName string) {
 	pm.lock.Lock()
 	go pm.plugins[pluginName].Remove()
 	delete(pm.plugins, pluginName)
+	pm.lock.Unlock()
+}
+
+// DeleteAll removes all plugins from the active plugin list, calling the plugin's unload method via goroutine
+func (pm *PluginMap) DeleteAll() {
+	pm.lock.Lock()
+	for plugName, plug := range pm.plugins {
+		go plug.Remove()
+		delete(pm.plugins, plugName)
+	}
 	pm.lock.Unlock()
 }
 

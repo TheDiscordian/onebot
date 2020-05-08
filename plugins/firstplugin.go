@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "github.com/TheDiscordian/onebot/onetype"
+	"github.com/TheDiscordian/onebot/onelib"
 )
 
 const (
@@ -10,7 +10,7 @@ const (
 	VERSION  = 0              // Version of the script (higher regarded as newer)
 )
 
-func Load() Plugin {
+func Load() onelib.Plugin {
 	/*
 	   Code to be executed on-load goes here
 	*/
@@ -31,7 +31,7 @@ func (fp *FirstPlugin) Version() int {
 	return VERSION
 }
 
-func (fp *FirstPlugin) Implements() ([]Command, Monitor) {
+func (fp *FirstPlugin) Implements() ([]onelib.Command, onelib.Monitor) {
 	return nil, nil
 }
 
