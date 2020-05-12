@@ -85,6 +85,6 @@ func UnloadProtocols() {
 }
 
 // ProcessMessage processes command and monitor triggers, spawning a new goroutine for every trigger.
-func ProcessMessage(msg Message, sender Sender) {
+func ProcessMessage(prefix string, msg Message, sender Sender) {
 	// TODO
 }
