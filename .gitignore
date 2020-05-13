@@ -1,0 +1,8 @@
+# Binaries
+bin/
+plugins/*.so
+# Module checksums
+go.sum
+# Runtime files
+onebot.log
+onedb/
