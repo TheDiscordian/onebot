@@ -277,7 +277,7 @@ type Message interface {
 // Sender contains information about who and where a message came from
 type Sender interface {
 	DisplayName() string // Display name of the sender
-	Username() string    // Username of the sender (often unknown, should return an empty string)
+	Username() string    // Username of the sender (often unknown, should return an empty string if so)
 	UUID() UUID          // Unique identifier for the sender
 	// Picture // TODO The avatar of the location
 	Location() Location   // The location where this sender sent the message from

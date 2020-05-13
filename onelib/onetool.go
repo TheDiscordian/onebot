@@ -21,6 +21,12 @@ func LoadPlugin(name string) error {
 	}
 	plug := loadF.(func() Plugin)()
 	Plugins.Put(name, plug)
+
+	commands, _ := plug.Implements()
+	for trigger, command := range commands {
+		Commands.Put(trigger, command)
+	}
+
 	Info.Printf("Loaded '%s' version %d.\n", plug.LongName(), plug.Version())
 	return nil
 }
@@ -88,7 +94,7 @@ func UnloadProtocols() {
 // getcommand returns the command using the line of text containing the command and the expected prefix (doesn't verify
 // prefix presence).
 func getcommand(prefix, line string) string {
-	text := line[:len(prefix)]
+	text := line[len(prefix):]
 	i := strings.Index(text, " ")
 	if i == -1 {
 		return text
@@ -99,7 +105,10 @@ func getcommand(prefix, line string) string {
 // ProcessMessage processes command and monitor triggers, spawning a new goroutine for every trigger.
 func ProcessMessage(prefix string, msg Message, sender Sender) {
 	text := msg.Text()
+	Debug.Println("Message text:", text)
 	if len(text) > len(prefix) && string(text[:len(prefix)]) == prefix {
+		Debug.Println("Attempting command:", getcommand(prefix, text))
+		Debug.Println(Commands.Get("say"))
 		if command := Commands.Get(getcommand(prefix, text)); command != nil {
 			// Call command as goroutine, passing a copy of the message without the command call
 			go command(msg.StripPrefix(), sender)
