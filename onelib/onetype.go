@@ -12,26 +12,26 @@ import (
 type UUID string
 
 var (
-    // Key is protocol name (ex: "discord")
+	// Key is protocol name (ex: "discord")
 	Protocols *ProtocolMap
-    // Key is plugin name (ex: "admin_tools")
-	Plugins   *PluginMap
-    // Key is command trigger (ex: "help")
-	Commands  *CommandMap
-	Monitors  *MonitorSlice
+	// Key is plugin name (ex: "admin_tools")
+	Plugins *PluginMap
+	// Key is command trigger (ex: "help")
+	Commands *CommandMap
+	Monitors *MonitorSlice
 
-    // Db is configured via config file only
+	// Db is configured via config file only
 	Db Database
 
-	DbEngine         string
-	PluginDir        string
-    // Only used for loading the default plugins
-	PluginLoadList   []string
-	ProtocolDir      string
-    // Only used for loading the default protocols
+	DbEngine  string
+	PluginDir string
+	// Only used for loading the default plugins
+	PluginLoadList []string
+	ProtocolDir    string
+	// Only used for loading the default protocols
 	ProtocolLoadList []string
 
-    // The main thread will watch this to terminate the process
+	// The main thread will watch this to terminate the process
 	Quit chan os.Signal
 )
 
