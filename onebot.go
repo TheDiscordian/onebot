@@ -29,8 +29,10 @@ import (
 )
 
 const (
+    // NAME is the default display name of the bot
 	NAME    = "OneBot"
-	VERSION = "v1.0.0"
+    // VERSION is the displayed version of the bot
+	VERSION = "v0.0.0"
 )
 
 /* DATABASE SPEC

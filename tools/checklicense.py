@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Copyright (c) 2020, The OneBot Contributors. All rights reserved.
 import os
 

@@ -36,9 +36,8 @@ func (db *levelDB) GetString(table, key string) (string, error) {
 func (db *levelDB) Search(table, field, key string) (map[string]interface{}, error) {
 	if field == "_id" {
 		return db.Get(table, key)
-	} else {
-		return nil, errors.New("Searching on LevelDB not yet implemented.")
 	}
+	return nil, errors.New("Searching on LevelDB not yet implemented.")
 }
 
 // Inserts value into key, erasing any potential previous value.

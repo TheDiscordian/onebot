@@ -8,23 +8,31 @@ import (
 	"sync"
 )
 
-type UUID string // A unique identifier
+// A unique identifier
+type UUID string
 
 var (
-	Protocols *ProtocolMap // Key is protocol name (ex: "discord")
-	Plugins   *PluginMap   // Key is plugin name (ex: "admin_tools")
-	Commands  *CommandMap  // Key is command trigger (ex: "help")
+    // Key is protocol name (ex: "discord")
+	Protocols *ProtocolMap
+    // Key is plugin name (ex: "admin_tools")
+	Plugins   *PluginMap
+    // Key is command trigger (ex: "help")
+	Commands  *CommandMap
 	Monitors  *MonitorSlice
 
-	Db Database // Db is configured via config file only
+    // Db is configured via config file only
+	Db Database
 
 	DbEngine         string
 	PluginDir        string
-	PluginLoadList   []string // Only used for loading the default plugins
+    // Only used for loading the default plugins
+	PluginLoadList   []string
 	ProtocolDir      string
-	ProtocolLoadList []string // Only used for loading the default protocols
+    // Only used for loading the default protocols
+	ProtocolLoadList []string
 
-	Quit chan os.Signal // The main thread will watch this to terminate the process
+    // The main thread will watch this to terminate the process
+	Quit chan os.Signal
 )
 
 func init() {
@@ -168,7 +176,7 @@ func (cm *CommandMap) DeleteSet(set map[string]Command) {
 		return
 	}
 	cm.lock.Lock()
-	for commandName, _ := range set {
+	for commandName := range set {
 		delete(cm.commands, commandName)
 	}
 	cm.lock.Unlock()

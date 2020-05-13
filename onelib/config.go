@@ -31,6 +31,6 @@ func LoadConfig() {
 	if DbEngine == "leveldb" {
 		Db = openLevelDB(config.Get("database.leveldb_path").(string))
 	} else {
-		Error.Panicln("database.engine = '%s', only 'leveldb' implemented.", DbEngine)
+		Error.Panicf("database.engine = '%s', only 'leveldb' implemented.\n", DbEngine)
 	}
 }

@@ -2,7 +2,6 @@
 package onelib
 
 import (
-	"errors"
 	"fmt"
 	"plugin"
 )
@@ -38,7 +37,7 @@ func LoadPlugins() {
 func UnloadPlugin(name string) error {
 	plug := Plugins.Get(name)
 	if plug == nil {
-		return errors.New(fmt.Sprintf("Plugin '%s' not loaded.", name))
+		return fmt.Errorf("Plugin '%s' not loaded.", name)
 	}
 	Plugins.Delete(name)
 	commands, monitor := plug.Implements()
