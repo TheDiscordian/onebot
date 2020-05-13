@@ -1,6 +1,7 @@
 # Binaries
 bin/
 plugins/*.so
+protocols/*.so
 # Module checksums
 go.sum
 # Runtime files

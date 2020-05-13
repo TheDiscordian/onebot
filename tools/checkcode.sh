@@ -8,4 +8,5 @@ go vet github.com/TheDiscordian/onebot/onelib
 # Using relative paths, see: https://github.com/golang/lint/issues/409
 golint
 golint ./onelib
-# TODO lint plugins
+golint ./plugins/*.go
+golint ./protocols/*.go

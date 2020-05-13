@@ -8,10 +8,13 @@ import (
 	"sync"
 )
 
-// A unique identifier
+// UUID represents a unique identifier, usually for a Location (room) or a Sender (user).
 type UUID string
 
 var (
+	DefaultPrefix   string
+	DefaultNickname string
+
 	// Key is protocol name (ex: "discord")
 	Protocols *ProtocolMap
 	// Key is plugin name (ex: "admin_tools")
@@ -254,6 +257,7 @@ type Database interface {
 
 type Location interface {
 	DisplayName() string // Display name of the location
+	Nickname() string    // The nickname of the bot in the location
 	Topic() string       // The topic of the location
 	// Picture // TODO The avatar of the location
 	UUID() UUID           // Unique identifier for the location
@@ -266,7 +270,8 @@ type Location interface {
 type Message interface {
 	Text() string // The unformatted text being received (minus the trigger word for commands)
 	// Reactions() []Reaction // TODO The reactions on the message
-	Raw() []byte // The raw data received
+	StripPrefix() Message // Returns a copy of the message with `prefix + commandName + " "` stripped (Ex: "!say Hello" becomes "Hello")
+	Raw() []byte          // The raw data received
 }
 
 // Sender contains information about who and where a message came from
@@ -292,7 +297,7 @@ type Protocol interface {
 	Name() string                  // The name of the protocol, used in the protocol map (should be same as filename, minus extension)
 	LongName() string              // The display name of the protocol
 	Version() int                  // The version of the protocol
-	NewMessage(raw []byte) Message // Returns a new Message object built from []byte
+	NewMessage(raw []byte) Message // Returns a new Message object built from []byte (TODO: I hate this)
 	Send(to UUID, msg Message)     // Sends a Message to a location
 	SendText(to UUID, text string) // Sends text to a location
 	Remove()                       // Called when the protocol is about to be terminated

@@ -4,6 +4,7 @@ package onelib
 import (
 	"fmt"
 	"plugin"
+	"strings"
 )
 
 // TODO Plugin / protocol list should save when manually changed
@@ -84,7 +85,26 @@ func UnloadProtocols() {
 	Protocols.DeleteAll()
 }
 
+// getcommand returns the command using the line of text containing the command and the expected prefix (doesn't verify
+// prefix presence).
+func getcommand(prefix, line string) string {
+	text := line[:len(prefix)]
+	i := strings.Index(text, " ")
+	if i == -1 {
+		return text
+	}
+	return text[:i]
+}
+
 // ProcessMessage processes command and monitor triggers, spawning a new goroutine for every trigger.
 func ProcessMessage(prefix string, msg Message, sender Sender) {
-	// TODO
+	text := msg.Text()
+	if len(text) > len(prefix) && string(text[:len(prefix)]) == prefix {
+		if command := Commands.Get(getcommand(prefix, text)); command != nil {
+			// Call command as goroutine, passing a copy of the message without the command call
+			go command(msg.StripPrefix(), sender)
+		}
+	}
+
+	// TODO process monitors
 }

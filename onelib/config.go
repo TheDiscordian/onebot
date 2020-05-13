@@ -12,6 +12,8 @@ func LoadConfig() {
 	if err != nil {
 		Error.Panicln("Error loading config", err.Error())
 	}
+	DefaultPrefix = config.Get("general.default_prefix").(string)
+	DefaultNickname = config.Get("general.default_nickname").(string)
 
 	PluginDir = config.Get("general.plugin_path").(string)
 	pluginList := config.Get("general.plugins").([]interface{})

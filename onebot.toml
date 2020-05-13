@@ -1,10 +1,12 @@
 [general]
+default_prefix = ","
+default_nickname = "OneBot"
 
 plugin_path = "plugins"
 plugins = ["firstplugin"]
 
 protocol_path = "protocols"
-protocols = []
+protocols = ["firstprotocol"]
 
 [database]
 engine = "leveldb" # valid values are 'leveldb' or 'mongodb'
