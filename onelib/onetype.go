@@ -1,3 +1,4 @@
+// Copyright (c) 2020, The OneBot Contributors. All rights reserved.
 package onelib
 
 // TODO How hard would it be for a plugin with this spec to tag a user on both Matrix and Discord?

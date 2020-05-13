@@ -1,3 +1,4 @@
+// Copyright (c) 2020, The OneBot Contributors. All rights reserved.
 package onelib
 
 import "github.com/pelletier/go-toml"
