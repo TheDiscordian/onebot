@@ -8,7 +8,7 @@ import (
 const (
 	NAME     = "tarkovbud"
 	LONGNAME = "Tarkov Buddy Plugin"
-	VERSION  = 0
+	VERSION  = "v0.0.0"
 )
 
 //Every Plugin needs to be loaded
@@ -16,10 +16,10 @@ func Load() onelib.Plugin {
 	return new(TarkovBuddy)
 }
 
-//define pointer?
+// TarkovBuddy is a placeholder type, currently just used to satisfy Plugin interface
 type TarkovBuddy int
 
-//Plugin Manager Dependancies from lines 8-11
+// Plugin Manager Dependancies from lines 8-11
 func (tb *TarkovBuddy) Name() string {
 	return NAME
 }
@@ -28,7 +28,7 @@ func (tb *TarkovBuddy) LongName() string {
 	return LONGNAME
 }
 
-func (tb *TarkovBuddy) Version() int {
+func (tb *TarkovBuddy) Version() string {
 	return VERSION
 }
 
