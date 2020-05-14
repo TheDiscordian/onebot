@@ -34,7 +34,7 @@ func roll(msg onelib.Message, sender onelib.Sender) {
 	if droll > 1 {
 		text = fmt.Sprintf("You rolled a %d.", rand.Intn(droll)+1)
 	} else {
-		text = fmt.Sprintf("Rolls one die. Usage: %sroll <number of sides> (min 2)\n", onelib.DefaultPrefix)
+		text = fmt.Sprintf("Rolls one die. Usage: %sroll <number of sides> (min 2)", onelib.DefaultPrefix)
 	}
 	sender.Location().SendText(text)
 }
