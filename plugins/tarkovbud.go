@@ -45,29 +45,17 @@ func tarkovMap(msg onelib.Message, sender onelib.Sender) {
 
 	if msg.Text() == "interchange" {
 		sender.Location().SendText(interchange)
-	}
-
-	if msg.Text() == "reserve" {
+	} else if msg.Text() == "reserve" {
 		sender.Location().SendText(reserve)
-	}
-
-	if msg.Text() == "woods" {
+	} else if msg.Text() == "woods" {
 		sender.Location().SendText(woods)
-	}
-
-	if msg.Text() == "shoreline" {
+	} else if msg.Text() == "shoreline" {
 		sender.Location().SendText(shoreline)
-	}
-
-	if msg.Text() == "labs" {
+	} else if msg.Text() == "labs" {
 		sender.Location().SendText(labs)
-	}
-
-	if msg.Text() == "factory" {
+	} else if msg.Text() == "factory" {
 		sender.Location().SendText(factory)
-	}
-
-	if msg.Text() == "customs" {
+	} else if msg.Text() == "customs" {
 		sender.Location().SendText(customs)
 	} else {
 		sender.Location().SendText("Sorry, try this: " + maphelp)
