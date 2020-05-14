@@ -1,4 +1,5 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+
 package main
 
 import (
@@ -9,11 +10,11 @@ import (
 )
 
 const (
-	// Same as filename, minus extension
+	// NAME is same as filename, minus extension
 	NAME = "matrix"
-	// Name presented to user
+	// LONGNAME is what's presented to the user
 	LONGNAME = "Matrix"
-	// Version of the script
+	// VERSION of the script
 	VERSION = "v0.0.0"
 )
 
@@ -35,6 +36,7 @@ func loadConfig() {
 	matrixAuthPass = onelib.GetTextConfig(NAME, "auth_pass")
 }
 
+// Load connects to Matrix, and sets up listeners. It's required for OneBot.
 // TODO store rooms as a map of locations & a map of senders, mapped by UID
 func Load() onelib.Protocol {
 	loadConfig()
@@ -207,6 +209,7 @@ func (mc *matrixClient) Sync() error {
 	return mc.client.Sync()
 }
 
+// Matrix is the Protocol object used for handling anything Matrix related.
 type Matrix struct {
 	/*
 	   Store useful data here such as connected rooms, admins, nickname, accepted prefixes, etc
@@ -225,14 +228,17 @@ func (matrix *Matrix) handleconnections() {
 	}
 }
 
+// Name returns the name of the plugin, usually the filename.
 func (matrix *Matrix) Name() string {
 	return NAME
 }
 
+// LongName returns the display name of the plugin.
 func (matrix *Matrix) LongName() string {
 	return LONGNAME
 }
 
+// Version returns the version of the plugin, usually in the format of "v0.0.0".
 func (matrix *Matrix) Version() string {
 	return VERSION
 }
@@ -259,6 +265,7 @@ func (matrix *Matrix) recv(msg onelib.Message, sender onelib.Sender) {
 	}
 }
 
+// Remove currently doesn't do anything.
 func (matrix *Matrix) Remove() {
 	/*
 	   Unload code goes here (disconnects)

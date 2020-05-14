@@ -1,4 +1,5 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+
 package main
 
 /* CONFIG SPEC
@@ -48,8 +49,7 @@ LevelDB keys will be generated as regular MongoDB ObjectIDs in bytes, unless exp
 */
 
 func main() {
-	LogFile = "onebot.log"
-	InitLoggers()
+	InitLoggers("onebot.log")
 	Info.Printf("Starting up %s %s...\n", NAME, VERSION)
 	LoadConfig()
 	Info.Println("Loading protocols...")

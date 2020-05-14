@@ -1,4 +1,5 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+
 package onelib
 
 import (
@@ -8,6 +9,7 @@ import (
 
 var config *toml.Tree
 
+// GetTextConfig returns a config value, checking the DB first, expecting a string.
 func GetTextConfig(plugin, key string) string {
 	if txt, _ := Db.GetString(plugin, key); txt != "" {
 		return txt
@@ -18,14 +20,15 @@ func GetTextConfig(plugin, key string) string {
 	return ""
 }
 
+// SetTextConfig sets a string config value.
 func SetTextConfig(plugin, key, text string) {
 	Db.PutString(plugin, key, text)
 }
 
+// LoadConfig loads the configuration file and inits the DB. This does not respect locks on config, do not run this
+// while any goroutines are running. Ultimately this will check the DB before loading from the config file.
 // TODO set default config path
-// TODO implement DB override
-// Should set all variables unless DB overrides. This also inits DB. This does not respect locks on config, do not run
-// this while any goroutines are running.
+// TODO check DB before config file
 func LoadConfig() {
 	var err error
 	config, err = toml.LoadFile("onebot.toml")

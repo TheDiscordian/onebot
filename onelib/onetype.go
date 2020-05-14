@@ -1,4 +1,5 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+
 package onelib
 
 // TODO How hard would it be for a plugin with this spec to tag a user on both Matrix and Discord?
@@ -12,29 +13,35 @@ import (
 type UUID string
 
 var (
-	DefaultPrefix   string
+	// DefaultPrefix is the default prefix used to trigger commands. (Ex: In ",say Hello" the "," would be the prefix)
+	DefaultPrefix string
+	// DefaultNickname is the default display name for the bot.
 	DefaultNickname string
 
-	// Key is protocol name (ex: "discord")
+	// Protocols is a map of loaded Protocols. Key is protocol name (ex: "discord")
 	Protocols *ProtocolMap
-	// Key is plugin name (ex: "admin_tools")
+	// Plugins is a map of loaded Plugins. Key is plugin name (ex: "admin_tools")
 	Plugins *PluginMap
-	// Key is command trigger (ex: "help")
+	// Commands is a map of loaded Commands. Key is command trigger (ex: "help")
 	Commands *CommandMap
+	// Monitors is a slice of loaded Monitors.
 	Monitors *MonitorSlice
 
-	// Db is configured via config file only
+	// Db is configured via config file only.
 	Db Database
 
-	DbEngine  string
+	// DbEngine is the database type currently in use.
+	DbEngine string
+	// PluginDir is the directory plugins are stored.
 	PluginDir string
-	// Only used for loading the default plugins
+	// PluginLoadList is only used for loading the default plugins.
 	PluginLoadList []string
-	ProtocolDir    string
-	// Only used for loading the default protocols
+	// ProtocolDir is the directory protocols are stored.
+	ProtocolDir string
+	// ProtocolLoadList is only used for loading the default protocols.
 	ProtocolLoadList []string
 
-	// The main thread will watch this to terminate the process
+	// Quit - the main thread will watch this to terminate the process.
 	Quit chan os.Signal
 )
 
@@ -46,13 +53,13 @@ func init() {
 	Quit = make(chan os.Signal)
 }
 
-// A concurrent-safe map of protocols
+// ProtocolMap is a concurrent-safe map of protocols.
 type ProtocolMap struct {
 	protocols map[string]Protocol
 	lock      *sync.RWMutex
 }
 
-// Returns a new concurrent-safe ProtocolMap
+// NewProtocolMap returns a new concurrent-safe ProtocolMap
 func NewProtocolMap() *ProtocolMap {
 	pm := &ProtocolMap{lock: new(sync.RWMutex)}
 	pm.protocols = make(map[string]Protocol, 1)
@@ -92,13 +99,13 @@ func (pm *ProtocolMap) DeleteAll() {
 	pm.lock.Unlock()
 }
 
-// A concurrent-safe map of plugins
+// PluginMap is a concurrent-safe map of plugins.
 type PluginMap struct {
 	plugins map[string]Plugin
 	lock    *sync.RWMutex
 }
 
-// Returns a new concurrent-safe PluginMap
+// NewPluginMap returns a new concurrent-safe PluginMap.
 func NewPluginMap() *PluginMap {
 	pm := &PluginMap{lock: new(sync.RWMutex)}
 	pm.plugins = make(map[string]Plugin, 2)
@@ -138,20 +145,20 @@ func (pm *PluginMap) DeleteAll() {
 	pm.lock.Unlock()
 }
 
-// A concurrent-safe map of commands
+// CommandMap is a concurrent-safe map of commands
 type CommandMap struct {
 	commands map[string]Command
 	lock     *sync.RWMutex
 }
 
-// Returns a new concurrent-safe CommandMap
+// NewCommandMap returns a new concurrent-safe CommandMap.
 func NewCommandMap() *CommandMap {
 	cm := &CommandMap{lock: new(sync.RWMutex)}
 	cm.commands = make(map[string]Command, 4)
 	return cm
 }
 
-// Get a command from the CommandMap
+// Get a command from the CommandMap.
 func (cm *CommandMap) Get(commandName string) Command {
 	cm.lock.RLock()
 	command := cm.commands[commandName]
@@ -159,21 +166,21 @@ func (cm *CommandMap) Get(commandName string) Command {
 	return command
 }
 
-// Put a command into the CommandMap
+// Put a command into the CommandMap.
 func (cm *CommandMap) Put(commandName string, command Command) {
 	cm.lock.Lock()
 	cm.commands[commandName] = command
 	cm.lock.Unlock()
 }
 
-// Delete removes the command from the active command list, calling the command's unload method via goroutine
+// Delete removes the command from the active command list, calling the command's unload method via goroutine.
 func (cm *CommandMap) Delete(commandName string) {
 	cm.lock.Lock()
 	delete(cm.commands, commandName)
 	cm.lock.Unlock()
 }
 
-// Delete removes the command from the active command list, calling the command's unload method via goroutine
+// DeleteSet removes a map of commands from the active command list, calling the command's unload method via goroutine.
 func (cm *CommandMap) DeleteSet(set map[string]Command) {
 	if set == nil {
 		return
@@ -185,27 +192,27 @@ func (cm *CommandMap) DeleteSet(set map[string]Command) {
 	cm.lock.Unlock()
 }
 
-// DeleteAll removes all commands from the active command list
+// DeleteAll removes all commands from the active command list.
 func (cm *CommandMap) DeleteAll() {
 	cm.lock.Lock()
 	cm.commands = make(map[string]Command)
 	cm.lock.Unlock()
 }
 
-// A concurrent-safe slice of monitors
+// MonitorSlice is a concurrent-safe slice of monitors.
 type MonitorSlice struct {
 	monitors []*Monitor
 	lock     *sync.RWMutex
 }
 
-// Returns a new concurrent-safe MonitorSlice
+// NewMonitorSlice returns a new concurrent-safe MonitorSlice.
 func NewMonitorSlice() *MonitorSlice {
 	ms := &MonitorSlice{lock: new(sync.RWMutex)}
 	ms.monitors = make([]*Monitor, 0)
 	return ms
 }
 
-// Get copy of monitor slice for reading
+// Get copy of monitor slice for reading.
 func (ms *MonitorSlice) Get() []*Monitor {
 	ms.lock.RLock()
 	slice := ms.monitors
@@ -213,14 +220,14 @@ func (ms *MonitorSlice) Get() []*Monitor {
 	return slice
 }
 
-// Put a monitor into the MonitorSlice
+// Put a monitor into the MonitorSlice.
 func (ms *MonitorSlice) Put(monitor *Monitor) {
 	ms.lock.Lock()
 	ms.monitors = append(ms.monitors, monitor)
 	ms.lock.Unlock()
 }
 
-// Delete removes the monitor from the active monitor list
+// Delete removes the monitor from the active monitor list.
 func (ms *MonitorSlice) Delete(monitor *Monitor) {
 	if monitor == nil {
 		return
@@ -236,7 +243,7 @@ func (ms *MonitorSlice) Delete(monitor *Monitor) {
 	ms.lock.Unlock()
 }
 
-// DeleteAll removes all monitors from the active monitor list
+// DeleteAll removes all monitors from the active monitor list.
 func (ms MonitorSlice) DeleteAll() {
 	ms.lock.Lock()
 	ms.monitors = make([]*Monitor, 0)
@@ -255,6 +262,7 @@ type Database interface {
 	Close() error                                                    // Terminate a database session (only run if nothing is using the database).
 }
 
+// Location represents a location in a protocol. Think like a room, or a group.
 type Location interface {
 	DisplayName() string // Display name of the location
 	Nickname() string    // The nickname of the bot in the location
@@ -309,14 +317,16 @@ Plugins should contain a function named "Load() Plugin"
 
 */
 
+// Plugin is an object representing a OneBot plugin.
 type Plugin interface {
 	Name() string                               // The name of the plugin, used in the plugin map (should be same as filename, minus extension)
 	LongName() string                           // The display name of the plugin
 	Version() string                            // The version of the plugin
-	Implements() (map[string]Command, *Monitor) // Returns lists of commands and monitor the plugin implements
+	Implements() (map[string]Command, *Monitor) // Returns a map of commands and monitor the plugin implements
 	Remove()                                    // Called when the plugin is about to be terminated
 }
 
+// Monitor is a struct containing pointers to functions which are called on certain events (can be nil).
 type Monitor struct {
 	OnMessage         func(from Sender, msg Message)    // Called on every new message
 	OnMessageWithText func(from Sender, msg Message)    // Called on every new message containing text
@@ -325,4 +335,5 @@ type Monitor struct {
 	//    OnLocationUpdate func(from Location, update LocationPresence) // Called on location update
 }
 
+// Command is a function called when a certain key is triggered.
 type Command func(msg Message, sender Sender)

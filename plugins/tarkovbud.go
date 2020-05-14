@@ -1,4 +1,5 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+
 package main
 
 import (
@@ -6,12 +7,15 @@ import (
 )
 
 const (
-	NAME     = "tarkovbud"
+	// NAME is same as filename, minus extension
+	NAME = "tarkovbud"
+	// LONGNAME is what's presented to the user
 	LONGNAME = "Tarkov Buddy Plugin"
-	VERSION  = "v0.0.0"
+	// VERSION of the script
+	VERSION = "v0.0.0"
 )
 
-//Every Plugin needs to be loaded
+// Load returns the Plugin object.
 func Load() onelib.Plugin {
 	return new(TarkovBuddy)
 }
@@ -19,20 +23,22 @@ func Load() onelib.Plugin {
 // TarkovBuddy is a placeholder type, currently just used to satisfy Plugin interface
 type TarkovBuddy int
 
-// Plugin Manager Dependancies from lines 8-11
+// Name returns the name of the plugin, usually the filename.
 func (tb *TarkovBuddy) Name() string {
 	return NAME
 }
 
+// LongName returns the display name of the plugin.
 func (tb *TarkovBuddy) LongName() string {
 	return LONGNAME
 }
 
+// Version returns the version of the plugin, usually in the format of "v0.0.0".
 func (tb *TarkovBuddy) Version() string {
 	return VERSION
 }
 
-//search gamemaps
+// tarkovMap searches gamemaps
 func tarkovMap(msg onelib.Message, sender onelib.Sender) {
 	interchange := "https://gamepedia.cursecdn.com/escapefromtarkov_gamepedia/e/e5/InterchangeMap_Updated_4.24.2020.png?version=c1114bd10889074ca8c8d85e3d1fb04b"
 	reserve := "https://gamepedia.cursecdn.com/escapefromtarkov_gamepedia/c/c0/ReserveMap3d.jpg?version=2b5fcc2b5f557535a42002e31c17c113"
@@ -62,11 +68,11 @@ func tarkovMap(msg onelib.Message, sender onelib.Sender) {
 	}
 }
 
-//function to call tarkovMap
+// Implements returns the function to call tarkovMap.
 func (tb *TarkovBuddy) Implements() (map[string]onelib.Command, *onelib.Monitor) {
 	return map[string]onelib.Command{"maps": tarkovMap}, nil
 }
 
-//need a remove function
+// Remove is required.
 func (tb *TarkovBuddy) Remove() {
 }

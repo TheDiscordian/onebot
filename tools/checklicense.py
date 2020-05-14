@@ -24,7 +24,7 @@ for i in gofiles:
         f.index(copyright)
     except:
         print("No license found on %s, updating..." % i.split('/')[-1])
-        out = [copyright]
+        out = [copyright+'\n'] # add an extra line so golang doesn't confuse the license for a package comment
         out.extend(f)
         open(i, 'w').write(''.join(out))
 

@@ -1,4 +1,5 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+
 package main
 
 import (
@@ -6,19 +7,28 @@ import (
 )
 
 const (
-	NAME     = "firstprotocol"  // Same as filename, minus extension
-	LONGNAME = "First Protocol" // Name presented to user
-	// Version of the script
+	// NAME is same as filename, minus extension
+	NAME = "firstprotocol"
+	// LONGNAME is what's presented to the user
+	LONGNAME = "First Protocol"
+	// VERSION of the script
 	VERSION = "v0.0.0"
 )
 
+func loadConfig() {
+	// firstProtocolServer = onelib.GetTextConfig(NAME, "server")
+}
+
+// Load connects to FirstProtocol, and sets up listeners. It's required for OneBot.
 func Load() onelib.Protocol {
+	loadConfig()
 	/*
 	   Code to be executed on-load goes here (connects)
 	*/
 	return onelib.Protocol(&FirstProtocol{prefix: onelib.DefaultPrefix, nickname: onelib.DefaultNickname})
 }
 
+// FirstProtocol is the Protocol object used for handling anything FirstProtocol related.
 type FirstProtocol struct {
 	/*
 	   Store useful data here such as connected rooms, admins, nickname, accepted prefixes, etc
@@ -27,14 +37,17 @@ type FirstProtocol struct {
 	nickname string
 }
 
+// Name returns the name of the plugin, usually the filename.
 func (fp *FirstProtocol) Name() string {
 	return NAME
 }
 
+// LongName returns the display name of the plugin.
 func (fp *FirstProtocol) LongName() string {
 	return LONGNAME
 }
 
+// Version returns the version of the plugin, usually in the format of "v0.0.0".
 func (fp *FirstProtocol) Version() string {
 	return VERSION
 }
@@ -59,6 +72,7 @@ func (fp *FirstProtocol) recv(msg onelib.Message, sender onelib.Sender) {
 	onelib.ProcessMessage(fp.prefix, msg, sender)
 }
 
+// Remove should disconnect any open connections making it so the bot can forget about the protocol cleanly.
 func (fp *FirstProtocol) Remove() {
 	/*
 	   Unload code goes here (disconnects)

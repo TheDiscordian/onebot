@@ -1,4 +1,5 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+
 package onelib
 
 import (
@@ -50,8 +51,9 @@ func (db *levelDB) PutString(table, key, text string) error {
 	return db.dB.Put([]byte(fmt.Sprintf("%s.%s", table, key)), []byte(text), nil)
 }
 
-// SetIndex sets an index on key. Building an index can take a long time.
-func (db *levelDB) SetIndex(table, key string) error {
+// SetIndex sets an index on field. Building an index can take a long time. On LevelDB Index *must* be unique, or will
+// overwrite.
+func (db *levelDB) SetIndex(table, field string) error {
 	return errors.New("SetIndex not implemented on LevelDB.")
 }
 

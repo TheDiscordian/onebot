@@ -1,4 +1,5 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+
 package onelib
 
 import (
@@ -41,6 +42,8 @@ func LoadPlugins() {
 	}
 }
 
+// UnloadPlugin removes a plugin from the active plugins map, returning an error if not loaded, calling the related
+// Delete methods.
 func UnloadPlugin(name string) error {
 	plug := Plugins.Get(name)
 	if plug == nil {
@@ -53,7 +56,7 @@ func UnloadPlugin(name string) error {
 	return nil
 }
 
-// Unloads every plugin, calling their unload routines.
+// UnloadPlugins unloads every plugin, calling their unload routines.
 func UnloadPlugins() {
 	Monitors.DeleteAll()
 	Commands.DeleteAll()
@@ -86,7 +89,7 @@ func LoadProtocols() {
 	}
 }
 
-// Unloads every protocol, calling their unload routines.
+// UnloadProtocols unloads every protocol, calling their unload routines.
 func UnloadProtocols() {
 	Protocols.DeleteAll()
 }
