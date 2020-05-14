@@ -49,19 +49,19 @@ func tarkovMap(msg onelib.Message, sender onelib.Sender) {
 	customs := "https://gamepedia.cursecdn.com/escapefromtarkov_gamepedia/c/c8/Customs_Nuxx_20190106_1.2.png?version=a3b44edf49616eaad2736c6523c977b0"
 	maphelp := "https://escapefromtarkov.gamepedia.com/Map_of_Tarkov"
 
-	if msg.Text() == "interchange" {
+	if txt := msg.Text(); txt == "interchange" {
 		sender.Location().SendText(interchange)
-	} else if msg.Text() == "reserve" {
+	} else if txt == "reserve" {
 		sender.Location().SendText(reserve)
-	} else if msg.Text() == "woods" {
+	} else if txt == "woods" {
 		sender.Location().SendText(woods)
-	} else if msg.Text() == "shoreline" {
+	} else if txt == "shoreline" {
 		sender.Location().SendText(shoreline)
-	} else if msg.Text() == "labs" {
+	} else if txt == "labs" {
 		sender.Location().SendText(labs)
-	} else if msg.Text() == "factory" {
+	} else if txt == "factory" {
 		sender.Location().SendText(factory)
-	} else if msg.Text() == "customs" {
+	} else if txt == "customs" {
 		sender.Location().SendText(customs)
 	} else {
 		sender.Location().SendText("Sorry, try this: " + maphelp)
