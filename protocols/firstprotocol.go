@@ -8,7 +8,8 @@ import (
 const (
 	NAME     = "firstprotocol"  // Same as filename, minus extension
 	LONGNAME = "First Protocol" // Name presented to user
-	VERSION  = 0                // Version of the script (higher regarded as newer)
+	// Version of the script
+	VERSION = "v0.0.0"
 )
 
 func Load() onelib.Protocol {
@@ -34,7 +35,7 @@ func (fp *FirstProtocol) LongName() string {
 	return LONGNAME
 }
 
-func (fp *FirstProtocol) Version() int {
+func (fp *FirstProtocol) Version() string {
 	return VERSION
 }
 

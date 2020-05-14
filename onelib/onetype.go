@@ -296,7 +296,7 @@ Plugins should contain a function named "Load() Protocol".
 type Protocol interface {
 	Name() string                  // The name of the protocol, used in the protocol map (should be same as filename, minus extension)
 	LongName() string              // The display name of the protocol
-	Version() int                  // The version of the protocol
+	Version() string               // The version of the protocol
 	NewMessage(raw []byte) Message // Returns a new Message object built from []byte (TODO: I hate this)
 	Send(to UUID, msg Message)     // Sends a Message to a location
 	SendText(to UUID, text string) // Sends text to a location
@@ -312,7 +312,7 @@ Plugins should contain a function named "Load() Plugin"
 type Plugin interface {
 	Name() string                               // The name of the plugin, used in the plugin map (should be same as filename, minus extension)
 	LongName() string                           // The display name of the plugin
-	Version() int                               // The version of the plugin
+	Version() string                            // The version of the plugin
 	Implements() (map[string]Command, *Monitor) // Returns lists of commands and monitor the plugin implements
 	Remove()                                    // Called when the plugin is about to be terminated
 }

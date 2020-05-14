@@ -1,13 +1,34 @@
 // Copyright (c) 2020, The OneBot Contributors. All rights reserved.
 package onelib
 
-import "github.com/pelletier/go-toml"
+import (
+	"fmt"
+	"github.com/pelletier/go-toml"
+)
+
+var config *toml.Tree
+
+func GetTextConfig(plugin, key string) string {
+	if txt, _ := Db.GetString(plugin, key); txt != "" {
+		return txt
+	}
+	if cfg := config.Get(fmt.Sprintf("%s.%s", plugin, key)); cfg != nil {
+		return cfg.(string)
+	}
+	return ""
+}
+
+func SetTextConfig(plugin, key, text string) {
+	Db.PutString(plugin, key, text)
+}
 
 // TODO set default config path
 // TODO implement DB override
-// Should set all variables unless DB overrides. This also inits DB.
+// Should set all variables unless DB overrides. This also inits DB. This does not respect locks on config, do not run
+// this while any goroutines are running.
 func LoadConfig() {
-	config, err := toml.LoadFile("onebot.toml")
+	var err error
+	config, err = toml.LoadFile("onebot.toml")
 
 	if err != nil {
 		Error.Panicln("Error loading config", err.Error())

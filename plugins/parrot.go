@@ -8,7 +8,8 @@ import (
 const (
 	NAME     = "parrot"        // Same as filename, minus extension
 	LONGNAME = "Parrot Plugin" // Name presented to user
-	VERSION  = 0               // Version of the script (higher regarded as newer)
+	// Version of the script
+	VERSION = "v0.0.0"
 )
 
 func Load() onelib.Plugin {
@@ -32,7 +33,7 @@ func (pp *ParrotPlugin) LongName() string {
 	return LONGNAME
 }
 
-func (pp *ParrotPlugin) Version() int {
+func (pp *ParrotPlugin) Version() string {
 	return VERSION
 }
 

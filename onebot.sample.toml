@@ -1,0 +1,24 @@
+[general]
+default_prefix = ","
+default_nickname = "OneBot"
+
+plugin_path = "plugins"
+plugins = ["parrot", "roll"]
+
+protocol_path = "protocols"
+protocols = ["matrix"]
+
+[database]
+engine = "leveldb" # valid values are 'leveldb' or 'mongodb'
+
+leveldb_path = "onedb"
+
+[matrix]
+# for example: https://matrix.org
+home_server = ""
+# if using auth_token, it must be in "@username:homeserver" format
+auth_user = ""
+# if blank, falls back onto auth_pass
+auth_token = ""
+# if set, this will be used to retrieve an auth token, then the password can be omitted from this file
+auth_pass = ""

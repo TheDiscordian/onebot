@@ -8,7 +8,8 @@ import (
 const (
 	NAME     = "firstplugin"  // Same as filename, minus extension
 	LONGNAME = "First Plugin" // Name presented to user
-	VERSION  = 0              // Version of the script (higher regarded as newer)
+	// Version of the script
+	VERSION = "v0.0.0"
 )
 
 func Load() onelib.Plugin {
@@ -28,7 +29,7 @@ func (fp *FirstPlugin) LongName() string {
 	return LONGNAME
 }
 
-func (fp *FirstPlugin) Version() int {
+func (fp *FirstPlugin) Version() string {
 	return VERSION
 }
 

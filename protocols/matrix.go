@@ -13,42 +13,50 @@ const (
 	NAME = "matrix"
 	// Name presented to user
 	LONGNAME = "Matrix"
-	// Version of the script (higher regarded as newer)
-	VERSION = 0
-	// TODO move all these constants to the config...
-	// MATRIX_HOME_SERVER
-	MATRIX_HOME_SERVER = ""
-	// MATRIX_AUTH_USER
-	MATRIX_AUTH_USER = ""
-	// MATRIX_AUTH_TOKEN if blank, falls back onto pass
-	MATRIX_AUTH_TOKEN = ""
-	// MATRIX_AUTH_PASS
-	MATRIX_AUTH_PASS = ""
+	// Version of the script
+	VERSION = "v0.0.0"
 )
+
+var (
+	// matrixHomeServer
+	matrixHomeServer string
+	// matrixAuthUser
+	matrixAuthUser string
+	// matrixAuthToken if blank, falls back onto pass
+	matrixAuthToken string
+	// matrixAuthPass
+	matrixAuthPass string
+)
+
+func loadConfig() {
+	matrixHomeServer = onelib.GetTextConfig(NAME, "home_server")
+	matrixAuthUser = onelib.GetTextConfig(NAME, "auth_user")
+	matrixAuthToken = onelib.GetTextConfig(NAME, "auth_token")
+	matrixAuthPass = onelib.GetTextConfig(NAME, "auth_pass")
+}
 
 // TODO store rooms as a map of locations & a map of senders, mapped by UID
 func Load() onelib.Protocol {
-	/*
-	   Code to be executed on-load goes here (connects)
-	*/
-	client, err := gomatrix.NewClient(MATRIX_HOME_SERVER, MATRIX_AUTH_USER, MATRIX_AUTH_TOKEN)
+	loadConfig()
+
+	client, err := gomatrix.NewClient(matrixHomeServer, matrixAuthUser, matrixAuthToken)
 	if err != nil {
 		onelib.Error.Panicln(err)
 	}
-	if MATRIX_AUTH_TOKEN == "" {
-		if MATRIX_AUTH_USER == "" {
-			panic("both MATRIX_AUTH_USER and MATRIX_AUTH_TOKEN can't be blank.")
+	if matrixAuthToken == "" {
+		if matrixAuthUser == "" {
+			panic("both matrixAuthPass and matrixAuthToken can't be blank.")
 		}
 		resp, err := client.Login(&gomatrix.ReqLogin{
 			Type:     "m.login.password",
-			User:     MATRIX_AUTH_USER,
-			Password: MATRIX_AUTH_PASS,
+			User:     matrixAuthUser,
+			Password: matrixAuthPass,
 		})
 		if err != nil {
 			onelib.Error.Panicln(err)
 		}
-		// TODO automatically save access token
-		onelib.Info.Println("Access token:", resp.AccessToken)
+		onelib.SetTextConfig(NAME, "auth_token", resp.AccessToken)
+		onelib.Info.Println("Access token (saved):", resp.AccessToken)
 		client.SetCredentials(resp.UserID, resp.AccessToken)
 	}
 	syncer := client.Syncer.(*gomatrix.DefaultSyncer)
@@ -101,6 +109,7 @@ func (mm *matrixMessage) Text() string {
 	return mm.text
 }
 
+// FIXME change to "StripPrefix(prefix string) onelib.Message" because it makes infinitely more sense
 func (mm *matrixMessage) StripPrefix() onelib.Message {
 	return onelib.Message(&matrixMessage{text: strings.Join(strings.Split(mm.text, " ")[1:], " ")})
 }
@@ -224,7 +233,7 @@ func (matrix *Matrix) LongName() string {
 	return LONGNAME
 }
 
-func (matrix *Matrix) Version() int {
+func (matrix *Matrix) Version() string {
 	return VERSION
 }
 
@@ -245,8 +254,7 @@ func (matrix *Matrix) SendText(to onelib.UUID, text string) {
 
 // recv should be called after you've recieved data and built a Message object
 func (matrix *Matrix) recv(msg onelib.Message, sender onelib.Sender) {
-	onelib.Debug.Println("Got msg:", msg, "from:", sender)
-	if string(sender.UUID()) != MATRIX_AUTH_USER {
+	if string(sender.UUID()) != matrixAuthUser {
 		onelib.ProcessMessage(matrix.prefix, msg, sender)
 	}
 }
