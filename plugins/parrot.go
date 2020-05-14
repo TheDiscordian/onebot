@@ -20,6 +20,18 @@ func Load() onelib.Plugin {
 	return new(ParrotPlugin)
 }
 
+func reverse(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
+}
+
+func revParrot(msg onelib.Message, sender onelib.Sender) {
+	sender.Location().SendText(reverse(msg.Text()))
+}
+
 func parrot(msg onelib.Message, sender onelib.Sender) {
 	sender.Location().SendText(msg.Text())
 }
@@ -44,7 +56,7 @@ func (pp *ParrotPlugin) Version() string {
 
 // Implements returns a map of commands and monitor the plugin implements.
 func (pp *ParrotPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"say": parrot}, nil
+	return map[string]onelib.Command{"say": parrot, "s": parrot, "r": revParrot, "rev": revParrot}, nil
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.
