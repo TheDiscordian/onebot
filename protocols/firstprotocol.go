@@ -67,6 +67,11 @@ func (fp *FirstProtocol) SendText(to onelib.UUID, text string) {
 	// code here
 }
 
+// SendText sends formatted text to a location specified by to (usually a location or sender UUID).
+func (fp *FirstProtocol) SendFormattedText(to onelib.UUID, text, formattedText string) {
+	// code here
+}
+
 // recv should be called after you've recieved data and built a Message object
 func (fp *FirstProtocol) recv(msg onelib.Message, sender onelib.Sender) {
 	onelib.ProcessMessage(fp.prefix, msg, sender)
