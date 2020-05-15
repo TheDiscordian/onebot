@@ -251,14 +251,15 @@ func (ms MonitorSlice) DeleteAll() {
 }
 
 // Database represents a database connection. It's meant to be simple, to work for most general usage.
-// TODO LevelDB is ordered and MongoDB supports comparators. Maybe support simple range returns (IE: select users /w money > 50).
 type Database interface {
 	Get(table, key string) (map[string]interface{}, error)           // Retrieves value by key directly
 	GetString(table, key string) (string, error)                     // Retrieve a string stored with PutString.
+	GetInt(table, key string) (int, error)                           // Retrieve an int stored with PutInt.
 	Search(table, field, key string) (map[string]interface{}, error) // Searches for key in field, containing key (IE: field:'username', key:'admin'), using an index if exists.
 	Put(table string, data map[string]interface{}) ([]byte, error)   // Inserts data into database, using "_id" field as key, generating one if none exists. Returns key.
 	PutString(table, key, text string) error                         // Inserts text at location "key" for retrieval via GetString
-	SetIndex(table, field string) error                              // Sets an index on field.
+	PutInt(table, key string, i int) error                           // Inserts an integer at location "key" for retrieval via GetInt
+	SetIndex(table, field string) error                              // Sets an index on field. If using LevelDB, values in this field must be unique.
 	Close() error                                                    // Terminate a database session (only run if nothing is using the database).
 }
 

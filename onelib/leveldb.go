@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/syndtr/goleveldb/leveldb"
+	"strconv"
 )
 
 type levelDB struct {
@@ -32,6 +33,17 @@ func (db *levelDB) GetString(table, key string) (string, error) {
 	return string(data), err
 }
 
+// Retrieve an integer stored with PutInt.
+func (db *levelDB) GetInt(table, key string) (int, error) {
+	data, err := db.dB.Get([]byte(fmt.Sprintf("%s.%s", table, key)), nil)
+	if err != nil {
+		return 0, err
+	}
+	var i int
+	i, err = strconv.Atoi(string(data))
+	return i, err
+}
+
 // Searches for key in field, containing key (IE: field:'username', key:'admin'), using an index if exists. Can be very
 // slow without an index.
 func (db *levelDB) Search(table, field, key string) (map[string]interface{}, error) {
@@ -49,6 +61,11 @@ func (db *levelDB) Put(table string, data map[string]interface{}) ([]byte, error
 // Inserts text at location "key" for retrieval via GetString
 func (db *levelDB) PutString(table, key, text string) error {
 	return db.dB.Put([]byte(fmt.Sprintf("%s.%s", table, key)), []byte(text), nil)
+}
+
+// Inserts an integer at location "key" for retrieval via GetInt
+func (db *levelDB) PutInt(table, key string, i int) error {
+	return db.dB.Put([]byte(fmt.Sprintf("%s.%s", table, key)), []byte(strconv.Itoa(i)), nil)
 }
 
 // SetIndex sets an index on field. Building an index can take a long time. On LevelDB Index *must* be unique, or will
