@@ -36,6 +36,13 @@ func loadConfig() {
 	matrixAuthPass = onelib.GetTextConfig(NAME, "auth_pass")
 }
 
+type matrixProtocolMessage struct {
+	Format        string `json:"format"`
+	Msgtype       string `json:"msgtype"`
+	Body          string `json:"body"`
+	FormattedBody string `json:"formatted_body"`
+}
+
 // Load connects to Matrix, and sets up listeners. It's required for OneBot.
 // TODO store rooms as a map of locations & a map of senders, mapped by UID
 func Load() onelib.Protocol {
@@ -68,6 +75,9 @@ func Load() onelib.Protocol {
 	syncer.OnEventType("m.room.message", func(ev *gomatrix.Event) {
 		if ev.Content["msgtype"] != nil && ev.Content["msgtype"].(string) == "m.text" {
 			msg := &matrixMessage{text: ev.Content["body"].(string)}
+			if ev.Content["format"] != nil && ev.Content["format"].(string) == "org.matrix.custom.html" {
+				msg.formattedText = ev.Content["formatted_body"].(string)
+			}
 			mc := &matrixClient{client: client}
 			ml := &matrixLocation{Client: mc, uuid: onelib.UUID(ev.RoomID)}
 			sender := &matrixSender{uuid: onelib.UUID(ev.Sender), location: ml}
@@ -104,16 +114,22 @@ func Load() onelib.Protocol {
 }
 
 type matrixMessage struct {
-	text string
+	formattedText, text string
 }
 
 func (mm *matrixMessage) Text() string {
 	return mm.text
 }
 
-// FIXME change to "StripPrefix(prefix string) onelib.Message" because it makes infinitely more sense
-func (mm *matrixMessage) StripPrefix() onelib.Message {
-	return onelib.Message(&matrixMessage{text: strings.Join(strings.Split(mm.text, " ")[1:], " ")})
+func (mm *matrixMessage) FormattedText() string {
+	return mm.formattedText
+}
+
+func (mm *matrixMessage) StripPrefix(prefix string) onelib.Message {
+	if len(mm.text) > len(prefix) {
+		prefix = prefix + " "
+	}
+	return onelib.Message(&matrixMessage{text: strings.Replace(mm.text, prefix, "", 1), formattedText: strings.Replace(mm.formattedText, prefix, "", 1)})
 }
 
 func (mm *matrixMessage) Raw() []byte {
@@ -154,6 +170,10 @@ func (ms *matrixSender) SendText(text string) {
 	ms.location.Client.SendText(ms.uuid, text)
 }
 
+func (ms *matrixSender) SendFormattedText(text, formattedText string) {
+	ms.location.Client.SendFormattedText(ms.uuid, text, formattedText)
+}
+
 type matrixLocation struct {
 	Client                                 *matrixClient // pointer to originating client
 	displayName, nickname, topic, protocol string
@@ -184,6 +204,10 @@ func (ml *matrixLocation) SendText(text string) {
 	ml.Client.SendText(ml.uuid, text)
 }
 
+func (ml *matrixLocation) SendFormattedText(text, formattedText string) {
+	ml.Client.SendFormattedText(ml.uuid, text, formattedText)
+}
+
 func (ml *matrixLocation) Protocol() string {
 	return NAME
 }
@@ -200,6 +224,14 @@ func (mc *matrixClient) Send(to onelib.UUID, msg onelib.Message) {
 // SendText sends text to a location specified by to (usually a location or sender UUID).
 func (mc *matrixClient) SendText(to onelib.UUID, text string) {
 	_, err := mc.client.SendText(string(to), text)
+	if err != nil {
+		onelib.Error.Println(err)
+	}
+}
+
+// SendFormattedText sends formatted text to a location specified by to (usually a location or sender UUID).
+func (mc *matrixClient) SendFormattedText(to onelib.UUID, text, formattedText string) {
+	_, err := mc.client.SendMessageEvent(string(to), "m.room.message", &matrixProtocolMessage{Body: text, FormattedBody: formattedText, Format: "org.matrix.custom.html", Msgtype: "m.text"})
 	if err != nil {
 		onelib.Error.Println(err)
 	}
@@ -256,6 +288,11 @@ func (matrix *Matrix) Send(to onelib.UUID, msg onelib.Message) {
 // SendText sends text to a location specified by to (usually a location or sender UUID).
 func (matrix *Matrix) SendText(to onelib.UUID, text string) {
 	matrix.client.SendText(to, text)
+}
+
+// SendFormattedText sends formatted text to a location specified by to (usually a location or sender UUID).
+func (matrix *Matrix) SendFormattedText(to onelib.UUID, text, formattedText string) {
+	matrix.client.SendFormattedText(to, text, formattedText)
 }
 
 // recv should be called after you've recieved data and built a Message object

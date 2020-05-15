@@ -33,7 +33,11 @@ func revParrot(msg onelib.Message, sender onelib.Sender) {
 }
 
 func parrot(msg onelib.Message, sender onelib.Sender) {
-	sender.Location().SendText(msg.Text())
+	sender.Location().SendFormattedText(msg.Text(), msg.FormattedText())
+}
+
+func formatParrot(msg onelib.Message, sender onelib.Sender) {
+	sender.Location().SendFormattedText(msg.Text(), msg.Text())
 }
 
 // ParrotPlugin is an object for satisfying the Plugin interface.
@@ -56,7 +60,7 @@ func (pp *ParrotPlugin) Version() string {
 
 // Implements returns a map of commands and monitor the plugin implements.
 func (pp *ParrotPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"say": parrot, "s": parrot, "r": revParrot, "rev": revParrot}, nil
+	return map[string]onelib.Command{"say": parrot, "s": parrot, "r": revParrot, "rev": revParrot, "format": formatParrot, "form": formatParrot}, nil
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.

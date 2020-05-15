@@ -109,9 +109,10 @@ func getcommand(prefix, line string) string {
 func ProcessMessage(prefix string, msg Message, sender Sender) {
 	text := msg.Text()
 	if len(text) > len(prefix) && string(text[:len(prefix)]) == prefix {
-		if command := Commands.Get(getcommand(prefix, text)); command != nil {
+		commandName := getcommand(prefix, text)
+		if command := Commands.Get(commandName); command != nil {
 			// Call command as goroutine, passing a copy of the message without the command call
-			go command(msg.StripPrefix(), sender)
+			go command(msg.StripPrefix(prefix+commandName), sender)
 		}
 	}
 

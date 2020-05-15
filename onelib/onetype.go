@@ -268,18 +268,20 @@ type Location interface {
 	Nickname() string    // The nickname of the bot in the location
 	Topic() string       // The topic of the location
 	// Picture // TODO The avatar of the location
-	UUID() UUID           // Unique identifier for the location
-	Send(msg Message)     // Sends a message to the location
-	SendText(text string) // Sends text to the location
-	Protocol() string     // Returns the name of the protocol the location is in
+	UUID() UUID                                   // Unique identifier for the location
+	Send(msg Message)                             // Sends a message to the location
+	SendText(text string)                         // Sends text to the location
+	SendFormattedText(text, formattedText string) // Sends formatted text to the location (correctness might vary between protocols)
+	Protocol() string                             // Returns the name of the protocol the location is in
 }
 
 // Message contains information either being sent or received
 type Message interface {
-	Text() string // The unformatted text being received (minus the trigger word for commands)
+	Text() string          // The unformatted text being received (minus the trigger for commands)
+	FormattedText() string // the formatted text being received (minus trigger for commands)
 	// Reactions() []Reaction // TODO The reactions on the message
-	StripPrefix() Message // Returns a copy of the message with `prefix + commandName + " "` stripped (Ex: "!say Hello" becomes "Hello")
-	Raw() []byte          // The raw data received
+	StripPrefix(prefix string) Message // Returns a copy of the message with `prefix + commandName + " "` stripped (Ex: "!say Hello" becomes "Hello")
+	Raw() []byte                       // The raw data received
 }
 
 // Sender contains information about who and where a message came from
@@ -288,10 +290,11 @@ type Sender interface {
 	Username() string    // Username of the sender (often unknown, should return an empty string if so)
 	UUID() UUID          // Unique identifier for the sender
 	// Picture // TODO The avatar of the location
-	Location() Location   // The location where this sender sent the message from
-	Protocol() string     // Returns the protocol name responsible for the sender
-	Send(msg Message)     // Sends a Message to the sender
-	SendText(text string) // Sends text to the sender
+	Location() Location                           // The location where this sender sent the message from
+	Protocol() string                             // Returns the protocol name responsible for the sender
+	Send(msg Message)                             // Sends a Message to the sender
+	SendText(text string)                         // Sends text to the sender
+	SendFormattedText(text, formattedText string) // Sends formatted text to the sender (correctness might vary between protocols)
 }
 
 /* PROTOCOL SPEC
@@ -302,13 +305,14 @@ Plugins should contain a function named "Load() Protocol".
 
 // Protocol contains information about a protocol plugin
 type Protocol interface {
-	Name() string                  // The name of the protocol, used in the protocol map (should be same as filename, minus extension)
-	LongName() string              // The display name of the protocol
-	Version() string               // The version of the protocol
-	NewMessage(raw []byte) Message // Returns a new Message object built from []byte (TODO: I hate this)
-	Send(to UUID, msg Message)     // Sends a Message to a location
-	SendText(to UUID, text string) // Sends text to a location
-	Remove()                       // Called when the protocol is about to be terminated
+	Name() string                                          // The name of the protocol, used in the protocol map (should be same as filename, minus extension)
+	LongName() string                                      // The display name of the protocol
+	Version() string                                       // The version of the protocol
+	NewMessage(raw []byte) Message                         // Returns a new Message object built from []byte (TODO: I hate this)
+	Send(to UUID, msg Message)                             // Sends a Message to a location
+	SendText(to UUID, text string)                         // Sends text to a location
+	SendFormattedText(to UUID, text, formattedText string) // Sends formatted text to a location (correctness might vary between protocols)
+	Remove()                                               // Called when the protocol is about to be terminated
 }
 
 /* PLUGIN SPEC
