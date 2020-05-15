@@ -12,7 +12,7 @@ const (
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Tarkov Buddy Plugin"
 	// VERSION of the script
-	VERSION = "v0.0.0"
+	VERSION = "v0.0.1"
 )
 
 // Load returns the Plugin object.
@@ -68,9 +68,45 @@ func tarkovMap(msg onelib.Message, sender onelib.Sender) {
 	}
 }
 
+func tarkovBoss(msg onelib.Message, sender onelib.Sender) {
+	// find boss searching by map
+	customs := "https://escapefromtarkov.gamepedia.com/Reshala"
+	reserve := "https://escapefromtarkov.gamepedia.com/Glukar"
+	interchange := "https://escapefromtarkov.gamepedia.com/Killa"
+	woods := "https://escapefromtarkov.gamepedia.com/Shturman"
+	// find boss searching by name
+	reshala := "https://escapefromtarkov.gamepedia.com/Reshala"
+	glukar := "https://escapefromtarkov.gamepedia.com/Glukar"
+	killa := "https://escapefromtarkov.gamepedia.com/Killa"
+	shturman := "https://escapefromtarkov.gamepedia.com/Shturman"
+
+	bosshelp := "https://escapefromtarkov.gamepedia.com/Characters#Bosses"
+
+	if txt := msg.Text(); txt == "interchange" {
+		sender.Location().SendText(interchange)
+	} else if txt == "reserve" {
+		sender.Location().SendText(reserve)
+	} else if txt == "woods" {
+		sender.Location().SendText(woods)
+	} else if txt == "customs" {
+		sender.Location().SendText(customs)
+	} else if txt == "reshala" {
+		sender.Location().SendText(reshala)
+	} else if txt == "glukar" {
+		sender.Location().SendText(glukar)
+	} else if txt == "shturman" {
+		sender.Location().SendText(shturman)
+	} else if txt == "killa" {
+		sender.Location().SendText(killa)
+	} else {
+		sender.Location().SendText("Sorry, try this: " + bosshelp)
+	}
+}
+
 // Implements returns the function to call tarkovMap.
 func (tb *TarkovBuddy) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"maps": tarkovMap}, nil
+	return map[string]onelib.Command{"tarkov map": tarkovMap}, nil
+	return map[string]onelib.Command{"tarkov boss": tarkovBoss}, nil
 }
 
 // Remove is required.
