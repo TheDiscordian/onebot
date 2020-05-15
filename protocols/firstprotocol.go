@@ -67,7 +67,7 @@ func (fp *FirstProtocol) SendText(to onelib.UUID, text string) {
 	// code here
 }
 
-// SendText sends formatted text to a location specified by to (usually a location or sender UUID).
+// SendFormattedText sends formatted text to a location specified by to (usually a location or sender UUID).
 func (fp *FirstProtocol) SendFormattedText(to onelib.UUID, text, formattedText string) {
 	// code here
 }
