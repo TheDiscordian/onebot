@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/syndtr/goleveldb/leveldb"
+	"go.mongodb.org/mongo-driver/bson"
 	"strconv"
 )
 
@@ -44,6 +45,16 @@ func (db *levelDB) GetInt(table, key string) (int, error) {
 	return i, err
 }
 
+// Retrieve an object stored with PutObj.
+func (db *levelDB) GetObj(table, key string, obj interface{}) error {
+	data, err := db.dB.Get([]byte(fmt.Sprintf("%s.%s", table, key)), nil)
+	if err != nil {
+		return err
+	}
+	err = bson.Unmarshal(data, obj)
+	return err
+}
+
 // Searches for key in field, containing key (IE: field:'username', key:'admin'), using an index if exists. Can be very
 // slow without an index.
 func (db *levelDB) Search(table, field, key string) (map[string]interface{}, error) {
@@ -66,6 +77,15 @@ func (db *levelDB) PutString(table, key, text string) error {
 // Inserts an integer at location "key" for retrieval via GetInt
 func (db *levelDB) PutInt(table, key string, i int) error {
 	return db.dB.Put([]byte(fmt.Sprintf("%s.%s", table, key)), []byte(strconv.Itoa(i)), nil)
+}
+
+// Inserts an object at location "key" for retrieval via GetObj
+func (db *levelDB) PutObj(table, key string, obj interface{}) error {
+	data, err := bson.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	return db.dB.Put([]byte(fmt.Sprintf("%s.%s", table, key)), data, nil)
 }
 
 // SetIndex sets an index on field. Building an index can take a long time. On LevelDB Index *must* be unique, or will

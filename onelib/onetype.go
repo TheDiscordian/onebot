@@ -255,10 +255,12 @@ type Database interface {
 	Get(table, key string) (map[string]interface{}, error)           // Retrieves value by key directly
 	GetString(table, key string) (string, error)                     // Retrieve a string stored with PutString.
 	GetInt(table, key string) (int, error)                           // Retrieve an int stored with PutInt.
+	GetObj(table, key string, obj interface{}) error                 // Retrieve an object stored with PutObj.
 	Search(table, field, key string) (map[string]interface{}, error) // Searches for key in field, containing key (IE: field:'username', key:'admin'), using an index if exists.
 	Put(table string, data map[string]interface{}) ([]byte, error)   // Inserts data into database, using "_id" field as key, generating one if none exists. Returns key.
 	PutString(table, key, text string) error                         // Inserts text at location "key" for retrieval via GetString
 	PutInt(table, key string, i int) error                           // Inserts an integer at location "key" for retrieval via GetInt
+	PutObj(table, key string, obj interface{}) error                 // Inserts an object at location "key" for retrieval via GetObj
 	SetIndex(table, field string) error                              // Sets an index on field. If using LevelDB, values in this field must be unique.
 	Close() error                                                    // Terminate a database session (only run if nothing is using the database).
 }
