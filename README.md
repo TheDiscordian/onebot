@@ -1,6 +1,6 @@
 # OneBot
 
-## Version v0.0.3
+## Version v0.0.3-unstable
 
 Changes happen rapidly, the spec is liquid. Solidified instances will be tagged for go module use.
 
