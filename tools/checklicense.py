@@ -12,7 +12,7 @@ def getallgofiles(path):
             if len(i) > 3 and i[-3:] == '.go':
                 files.append(os.path.join(path, i))
         else:
-            files.extend(getallgofiles(i))
+            files.extend(getallgofiles(os.path.join(path, i)))
     return files
 
 copyright = "// " + open('LICENSE').readlines()[0]
