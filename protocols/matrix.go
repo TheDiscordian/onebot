@@ -36,6 +36,50 @@ func loadConfig() {
 	matrixAuthPass = onelib.GetTextConfig(NAME, "auth_pass")
 }
 
+// Matrix protocol structs. These should maybe be in their own library.
+
+// RespUserStatus is the JSON response for https://matrix.org/docs/spec/client_server/r0.6.0#get-matrix-client-r0-presence-userid-status
+// https://github.com/matrix-org/gomatrix/pull/80
+type RespUserStatus struct {
+	Presence        string `json:"presence"`
+	StatusMsg       string `json:"status_msg"`
+	lastActiveAgo   int    `json:"last_active_ago"`
+	currentlyActive bool   `json:"currently_active"`
+}
+
+// GetStatus returns the status of the user from the specified MXID. See https://matrix.org/docs/spec/client_server/r0.6.0#get-matrix-client-r0-presence-userid-status
+// https://github.com/matrix-org/gomatrix/pull/80
+func (cli *matrixClient) GetStatus(mxid string) (resp *RespUserStatus, err error) {
+	urlPath := cli.BuildURL("presence", mxid, "status")
+	err = cli.MakeRequest("GET", urlPath, nil, &resp)
+	return
+}
+
+// GetOwnStatus returns the user's status. See https://matrix.org/docs/spec/client_server/r0.6.0#get-matrix-client-r0-presence-userid-status
+// https://github.com/matrix-org/gomatrix/pull/80
+func (cli *matrixClient) GetOwnStatus() (resp *RespUserStatus, err error) {
+	return cli.GetStatus(cli.UserID)
+}
+
+// SetStatus sets the user's status. See https://matrix.org/docs/spec/client_server/r0.6.0#put-matrix-client-r0-presence-userid-status
+// https://github.com/matrix-org/gomatrix/pull/80
+func (cli *matrixClient) SetStatus(presence, status string) (err error) {
+	urlPath := cli.BuildURL("presence", cli.UserID, "status")
+	s := struct {
+		Presence  string `json:"presence"`
+		StatusMsg string `json:"status_msg"`
+	}{presence, status}
+	err = cli.MakeRequest("PUT", urlPath, &s, nil)
+	return
+}
+
+// MarkRead marks eventID in roomID as read, signifying the event, and all before it have been read. See https://matrix.org/docs/spec/client_server/r0.6.0#post-matrix-client-r0-rooms-roomid-receipt-receipttype-eventid
+// https://github.com/matrix-org/gomatrix/pull/81
+func (cli *matrixClient) MarkRead(roomID, eventID string) error {
+	urlPath := cli.BuildURL("rooms", roomID, "receipt", "m.read", eventID)
+	return cli.MakeRequest("POST", urlPath, nil, nil)
+}
+
 type matrixProtocolMessage struct {
 	Format        string `json:"format"`
 	Msgtype       string `json:"msgtype"`
@@ -70,7 +114,7 @@ func Load() onelib.Protocol {
 	}
 	syncer := client.Syncer.(*gomatrix.DefaultSyncer)
 
-	matrix := &Matrix{client: &matrixClient{client: client}, prefix: onelib.DefaultPrefix, nickname: onelib.DefaultNickname}
+	matrix := &Matrix{client: &matrixClient{Client: client}, prefix: onelib.DefaultPrefix, nickname: onelib.DefaultNickname}
 
 	syncer.OnEventType("m.room.message", func(ev *gomatrix.Event) {
 		if ev.Content["msgtype"] != nil && ev.Content["msgtype"].(string) == "m.text" {
@@ -78,7 +122,7 @@ func Load() onelib.Protocol {
 			if ev.Content["format"] != nil && ev.Content["format"].(string) == "org.matrix.custom.html" {
 				msg.formattedText = ev.Content["formatted_body"].(string)
 			}
-			mc := &matrixClient{client: client}
+			mc := &matrixClient{Client: client}
 			ml := &matrixLocation{Client: mc, uuid: onelib.UUID(ev.RoomID)}
 			sender := &matrixSender{uuid: onelib.UUID(ev.Sender), location: ml}
 			matrix.recv(onelib.Message(msg), onelib.Sender(sender))
@@ -86,8 +130,7 @@ func Load() onelib.Protocol {
 		} else {
 			onelib.Debug.Println("Message: ", ev.Sender)
 		}
-		urlPath := client.BuildURL("rooms", ev.RoomID, "receipt", "m.read", ev.ID)
-		err = client.MakeRequest("POST", urlPath, nil, nil)
+		err = matrix.client.MarkRead(ev.RoomID, ev.ID)
 		if err != nil {
 			onelib.Error.Println(err)
 		}
@@ -108,6 +151,13 @@ func Load() onelib.Protocol {
 	})
 
 	client.SetDisplayName(onelib.DefaultNickname)
+	err = matrix.client.SetStatus("online", "Test status.")
+	/*_, err = matrix.client.SendStateEvent("<DM room ID>", "im.vector.user_status", matrixAuthUser, struct {
+		Status string `json:"status"`
+	}{"Test status"})*/
+	if err != nil {
+		onelib.Error.Println("Error setting presence:", err)
+	}
 
 	go matrix.handleconnections()
 	return onelib.Protocol(matrix)
@@ -213,7 +263,7 @@ func (ml *matrixLocation) Protocol() string {
 }
 
 type matrixClient struct {
-	client *gomatrix.Client
+	*gomatrix.Client
 }
 
 // Send sends a Message object to a location specified by to (usually a location or sender UUID).
@@ -223,7 +273,7 @@ func (mc *matrixClient) Send(to onelib.UUID, msg onelib.Message) {
 
 // SendText sends text to a location specified by to (usually a location or sender UUID).
 func (mc *matrixClient) SendText(to onelib.UUID, text string) {
-	_, err := mc.client.SendText(string(to), text)
+	_, err := mc.Client.SendText(string(to), text)
 	if err != nil {
 		onelib.Error.Println(err)
 	}
@@ -231,14 +281,10 @@ func (mc *matrixClient) SendText(to onelib.UUID, text string) {
 
 // SendFormattedText sends formatted text to a location specified by to (usually a location or sender UUID).
 func (mc *matrixClient) SendFormattedText(to onelib.UUID, text, formattedText string) {
-	_, err := mc.client.SendMessageEvent(string(to), "m.room.message", &matrixProtocolMessage{Body: text, FormattedBody: formattedText, Format: "org.matrix.custom.html", Msgtype: "m.text"})
+	_, err := mc.SendMessageEvent(string(to), "m.room.message", &matrixProtocolMessage{Body: text, FormattedBody: formattedText, Format: "org.matrix.custom.html", Msgtype: "m.text"})
 	if err != nil {
 		onelib.Error.Println(err)
 	}
-}
-
-func (mc *matrixClient) Sync() error {
-	return mc.client.Sync()
 }
 
 // Matrix is the Protocol object used for handling anything Matrix related.
@@ -304,7 +350,5 @@ func (matrix *Matrix) recv(msg onelib.Message, sender onelib.Sender) {
 
 // Remove currently doesn't do anything.
 func (matrix *Matrix) Remove() {
-	/*
-	   Unload code goes here (disconnects)
-	*/
+	matrix.client.SetStatus("offline", "")
 }
