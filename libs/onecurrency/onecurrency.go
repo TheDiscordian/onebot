@@ -14,6 +14,7 @@ import (
 // DB_TABLE the table to use for onecurrency things
 const DB_TABLE = "onecurrency_money"
 
+// TODO a "GetAll(currency string) []*CurrencyObject" feature. Returns sorted list of Quantity+BankQuantity descending. Useful for leaderboards, mass bonuses.
 var Currency map[string]*currencyStore
 
 type currencyStore struct {
@@ -33,12 +34,8 @@ func (cs *currencyStore) save(uuid string, cObj *CurrencyObject) {
 }
 
 func (cs *currencyStore) load(uuid string) *CurrencyObject {
-	var err error
 	dbObj := new(CurrencyObject)
-	err = onelib.Db.GetObj(DB_TABLE, uuid, dbObj)
-	if err != nil {
-		panic(err)
-	}
+	onelib.Db.GetObj(DB_TABLE, uuid, dbObj)
 	if dbObj == nil {
 		return new(CurrencyObject)
 	}
