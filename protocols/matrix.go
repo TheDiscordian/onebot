@@ -88,7 +88,7 @@ type matrixProtocolMessage struct {
 }
 
 // Load connects to Matrix, and sets up listeners. It's required for OneBot.
-// TODO store rooms as a map of locations & a map of senders, mapped by UID
+// TODO store rooms as a map of locations mapped by UID
 func Load() onelib.Protocol {
 	loadConfig()
 
@@ -115,6 +115,7 @@ func Load() onelib.Protocol {
 	syncer := client.Syncer.(*gomatrix.DefaultSyncer)
 
 	matrix := &Matrix{client: &matrixClient{Client: client}, prefix: onelib.DefaultPrefix, nickname: onelib.DefaultNickname}
+	matrix.knownMembers = make(map[onelib.UUID]*member, 1)
 
 	syncer.OnEventType("m.room.message", func(ev *gomatrix.Event) {
 		if ev.Content["msgtype"] != nil && ev.Content["msgtype"].(string) == "m.text" {
@@ -124,9 +125,20 @@ func Load() onelib.Protocol {
 			}
 			mc := &matrixClient{Client: client}
 			ml := &matrixLocation{Client: mc, uuid: onelib.UUID(ev.RoomID)}
-			sender := &matrixSender{uuid: onelib.UUID(ev.Sender), location: ml}
+			var displayName string
+			if matrix.knownMembers[onelib.UUID(ev.Sender)] == nil {
+				resp, err := client.GetDisplayName(ev.Sender)
+				if err != nil {
+					displayName = ev.Sender
+				}
+				displayName = resp.DisplayName
+				matrix.knownMembers[onelib.UUID(ev.Sender)] = &member{displayName: resp.DisplayName}
+			} else {
+				displayName = matrix.knownMembers[onelib.UUID(ev.Sender)].displayName
+			}
+			sender := &matrixSender{uuid: onelib.UUID(ev.Sender), username: ev.Sender, displayName: displayName, location: ml}
 			matrix.recv(onelib.Message(msg), onelib.Sender(sender))
-			onelib.Debug.Printf("%s: %s\n", ev.Sender, msg.Text())
+			onelib.Debug.Printf("%s: %s\n", displayName, msg.Text())
 		} else {
 			onelib.Debug.Println("Message: ", ev.Sender)
 		}
@@ -213,7 +225,7 @@ func (ms *matrixSender) Protocol() string {
 }
 
 func (ms *matrixSender) Send(msg onelib.Message) {
-	onelib.Error.Println("not implemented.")
+	ms.location.Client.Send(ms.uuid, msg)
 }
 
 func (ms *matrixSender) SendText(text string) {
@@ -247,7 +259,7 @@ func (ml *matrixLocation) UUID() onelib.UUID {
 }
 
 func (ml *matrixLocation) Send(msg onelib.Message) {
-	onelib.Error.Println("not implemented.")
+	ml.Client.Send(ml.uuid, msg)
 }
 
 func (ml *matrixLocation) SendText(text string) {
@@ -287,14 +299,20 @@ func (mc *matrixClient) SendFormattedText(to onelib.UUID, text, formattedText st
 	}
 }
 
+// member contains useful data about a possible sender that's not typically sent in a message
+type member struct {
+	displayName string
+}
+
 // Matrix is the Protocol object used for handling anything Matrix related.
 type Matrix struct {
 	/*
 	   Store useful data here such as connected rooms, admins, nickname, accepted prefixes, etc
 	*/
-	prefix   string
-	nickname string
-	client   *matrixClient
+	prefix       string
+	nickname     string
+	client       *matrixClient
+	knownMembers map[onelib.UUID]*member
 }
 
 // TODO finish this, only proof of concept right now
