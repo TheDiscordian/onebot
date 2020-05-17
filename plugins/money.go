@@ -100,7 +100,7 @@ func work(msg onelib.Message, sender onelib.Sender) {
 		roll := rand.Intn(workMax-workMin) + workMin
 		text = fmt.Sprintf("<insert funny message here>, and gain %s%d!", DEFAULT_CURRENCY, roll)
 		formattedText = fmt.Sprintf("&lt;insert funny message here&gt;, and gain <strong>%s%d</strong>!", DEFAULT_CURRENCY, roll)
-		_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, sender.DisplayName(), roll)
+		_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, roll)
 		if err != nil {
 			onelib.Error.Println(err)
 		}
@@ -129,7 +129,7 @@ func slut(msg onelib.Message, sender onelib.Sender) {
 			roll := rand.Intn(slutFineMax-slutFineMin) + slutFineMin
 			text = fmt.Sprintf("<insert funny message here>, and lose %s%d!", DEFAULT_CURRENCY, roll)
 			formattedText = fmt.Sprintf("&lt;insert funny message here&gt;, and lose <strong>%s%d</strong>!", DEFAULT_CURRENCY, roll)
-			_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, sender.DisplayName(), roll*-1)
+			_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, roll*-1)
 			if err != nil {
 				onelib.Error.Println(err)
 			}
@@ -137,7 +137,7 @@ func slut(msg onelib.Message, sender onelib.Sender) {
 			roll := rand.Intn(slutMax-slutMin) + slutMin
 			text = fmt.Sprintf("<insert funny message here>, and gain %s%d!", DEFAULT_CURRENCY, roll)
 			formattedText = fmt.Sprintf("&lt;insert funny message here&gt;, and gain <strong>%s%d</strong>!", DEFAULT_CURRENCY, roll)
-			_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, sender.DisplayName(), roll)
+			_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, roll)
 			if err != nil {
 				onelib.Error.Println(err)
 			}
@@ -167,7 +167,7 @@ func crime(msg onelib.Message, sender onelib.Sender) {
 			roll := rand.Intn(crimeFineMax-crimeFineMin) + crimeFineMin
 			text = fmt.Sprintf("<insert funny message here>, and lose %s%d!", DEFAULT_CURRENCY, roll)
 			formattedText = fmt.Sprintf("&lt;insert funny message here&gt;, and lose <strong>%s%d</strong>!", DEFAULT_CURRENCY, roll)
-			_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, sender.DisplayName(), roll*-1)
+			_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, roll*-1)
 			if err != nil {
 				onelib.Error.Println(err)
 			}
@@ -175,7 +175,7 @@ func crime(msg onelib.Message, sender onelib.Sender) {
 			roll := rand.Intn(crimeMax-crimeMin) + crimeMin
 			text = fmt.Sprintf("<insert funny message here>, and gain %s%d!", DEFAULT_CURRENCY, roll)
 			formattedText = fmt.Sprintf("&lt;insert funny message here&gt;, and gain <strong>%s%d</strong>!", DEFAULT_CURRENCY, roll)
-			_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, sender.DisplayName(), roll)
+			_, err := onecurrency.Currency[DEFAULT_CURRENCY].Add(uuid, roll)
 			if err != nil {
 				onelib.Error.Println(err)
 			}
@@ -188,14 +188,22 @@ func crime(msg onelib.Message, sender onelib.Sender) {
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
+// TODO support extracting message from formatted text example: <a href=\"https://matrix.to/#/@kittypeach:matrix.thedisco.zone\">KittyPeach</a>
 func checkBal(msg onelib.Message, sender onelib.Sender) {
-	uuid := string(sender.UUID())
+	var uuid, displayName string
+	if msg.Text() == "" {
+		uuid = string(sender.UUID())
+		displayName = sender.DisplayName()
+	} else {
+		uuid = msg.Text()
+		displayName = uuid
+	}
 	cObj := onecurrency.Currency[DEFAULT_CURRENCY].Get(uuid)
 	if cObj == nil {
-		cObj = onecurrency.Currency[DEFAULT_CURRENCY].New(uuid, sender.DisplayName())
+		cObj = onecurrency.Currency[DEFAULT_CURRENCY].New(uuid)
 	}
-	text := fmt.Sprintf("%s's balance:\n    - Bal: %s%d\n    - Bank bal: %s%d", cObj.DisplayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity)
-	formattedText := fmt.Sprintf("<p><strong>%s's balance:</strong><ul><li>Bal: %s%d</li>\n<li>Bank bal: %s%d</li></ul></p>", cObj.DisplayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity)
+	text := fmt.Sprintf("%s's balance:\n    - Bal: %s%d\n    - Bank bal: %s%d", displayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity)
+	formattedText := fmt.Sprintf("<p><strong>%s's balance:</strong><ul><li>Bal: %s%d</li>\n<li>Bank bal: %s%d</li></ul></p>", displayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity)
 	sender.Location().SendFormattedText(text, formattedText)
 }
 

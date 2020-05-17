@@ -75,14 +75,14 @@ func (cs *currencyStore) Set(uuid string, cObj *CurrencyObject) {
 }
 
 // Add adds quantity to the Quantity of the stored CurrencyObject. It's atomic-safe, and should be quite fast, if used responsibly (IE: Make sure an object exists to add to, before calling this).
-func (cs *currencyStore) Add(uuid string, displayName string, quantity int) (int, error) {
+func (cs *currencyStore) Add(uuid string, quantity int) (int, error) {
 	if cs == nil {
 		return 0, errors.New("selected currency type doesn't exist")
 	}
 	cs.lock.Lock()
 	cObj := cs.storeMap[uuid]
 	if cObj == nil {
-		cObj = cs._new(uuid, displayName)
+		cObj = cs._new(uuid)
 	}
 	newQuantity := quantity + cObj.Quantity
 	cObj.Quantity = newQuantity
@@ -93,14 +93,14 @@ func (cs *currencyStore) Add(uuid string, displayName string, quantity int) (int
 
 // Multiply multuplies quantity with the Quantity of the stored CurrencyObject. It's atomic-safe, and should be quite fast. It rounds down.
 // TODO investigate if we'd rather just use float64 on the result, too.
-func (cs *currencyStore) Multiply(uuid string, displayName string, quantity float64) (int, error) {
+func (cs *currencyStore) Multiply(uuid string, quantity float64) (int, error) {
 	if cs == nil {
 		return 0, errors.New("selected currency type doesn't exist")
 	}
 	cs.lock.Lock()
 	cObj := cs.storeMap[uuid]
-	if cObj == nil { // race condition on first occurance of a user. Best way to mitigate this is to make sure cObj is never nil. This should be considered a fallback, code you want to avoid.
-		cObj = cs._new(uuid, displayName)
+	if cObj == nil {
+		cObj = cs._new(uuid)
 	}
 	newQuantity := int(quantity * float64(cObj.Quantity))
 	cObj.Quantity = newQuantity
@@ -110,24 +110,21 @@ func (cs *currencyStore) Multiply(uuid string, displayName string, quantity floa
 }
 
 // slightly different than New. Doesn't touch mutex locks, doesn't make a copy, doesn't save to database.
-func (cs *currencyStore) _new(uuid string, displayName string) *CurrencyObject {
+func (cs *currencyStore) _new(uuid string) *CurrencyObject {
 	cObj := cs.load(uuid)
-	cObj.DisplayName = displayName
 	cs.set(uuid, cObj)
 	return cObj
 }
 
 // New creates, stores, and returns a copy of a CurrencyObject.
-func (cs *currencyStore) New(uuid string, displayName string) *CurrencyObject {
+func (cs *currencyStore) New(uuid string) *CurrencyObject {
 	cObj := cs.load(uuid)
-	cObj.DisplayName = displayName
 	cObjCopy := *cObj
 	cs.Set(uuid, cObj)
 	return &cObjCopy
 }
 
 type CurrencyObject struct {
-	DisplayName  string `bson:"dN"` // DisplayName of the user
 	Quantity     int    `bson:"q"`  // Quantity of currency
 	BankQuantity int    `bson:"bQ"` // Quantity of currency in bank
 	Aliases      string `bson:"a"`  // User aliases

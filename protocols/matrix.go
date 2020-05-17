@@ -140,7 +140,7 @@ func Load() onelib.Protocol {
 			matrix.recv(onelib.Message(msg), onelib.Sender(sender))
 			onelib.Debug.Printf("%s: %s\n", displayName, msg.Text())
 		} else {
-			onelib.Debug.Println("Message: ", ev.Sender)
+			onelib.Debug.Println("Message: ", ev)
 		}
 		err = matrix.client.MarkRead(ev.RoomID, ev.ID)
 		if err != nil {
@@ -358,6 +358,9 @@ func (matrix *Matrix) SendText(to onelib.UUID, text string) {
 func (matrix *Matrix) SendFormattedText(to onelib.UUID, text, formattedText string) {
 	matrix.client.SendFormattedText(to, text, formattedText)
 }
+
+// GetUserDisplayName returns a user's display name from a UUID
+//func (matrix *Matrix) GetUserDisplayName(uuid onelib.UUID) string
 
 // recv should be called after you've recieved data and built a Message object
 func (matrix *Matrix) recv(msg onelib.Message, sender onelib.Sender) {
