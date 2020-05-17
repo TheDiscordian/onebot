@@ -144,7 +144,7 @@ func slut(msg onelib.Message, sender onelib.Sender) {
 		}
 	} else {
 		timeUntil := time.Until(storedTime.Add(slutTime))
-		text, formattedText = formatDuration("slut", timeUntil)
+		text, formattedText = formatDuration("be a slut", timeUntil)
 	}
 
 	sender.Location().SendFormattedText(text, formattedText)
@@ -182,7 +182,7 @@ func crime(msg onelib.Message, sender onelib.Sender) {
 		}
 	} else {
 		timeUntil := time.Until(storedTime.Add(crimeTime))
-		text, formattedText = formatDuration("crime", timeUntil)
+		text, formattedText = formatDuration("commit a crime", timeUntil)
 	}
 
 	sender.Location().SendFormattedText(text, formattedText)
