@@ -35,8 +35,9 @@ func (cp *ComicPlugin) Version() string {
 func comic(msg onelib.Message, sender onelib.Sender) {
 	min := 200
 	max := 2307 //TODO give link to main page for newest updates
-	text := fmt.Sprintf("Your comic: https://www.xkcd.com/%d", rand.Intn(max-min+1)+min)
-	formattedText := fmt.Sprintf("Your comic: <a href=https://www.xkcd.com/%d>here</a>", rand.Intn(max-min+1)+min)
+	comicn := rand.Intn(max-min+1) + min
+	text := fmt.Sprintf("Your comic: https://www.xkcd.com/%d", comicn)
+	formattedText := fmt.Sprintf("Your comic: <a href=https://www.xkcd.com/%d>here</a>", comicn)
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
