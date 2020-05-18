@@ -14,6 +14,7 @@ const (
 )
 
 func Load() onelib.Plugin {
+	rand.Seed(time.Now().UnixNano())
 	return new(ComicPlugin)
 }
 
@@ -32,10 +33,11 @@ func (cp *ComicPlugin) Version() string {
 }
 
 func comic(msg onelib.Message, sender onelib.Sender) {
-	rand.Seed(time.Now().UnixNano())
 	min := 200
 	max := 2307 //TODO give link to main page for newest updates
-	fmt.Println("Here you go: https://www.xkcd.com/", (rand.Intn(max-min+1) + min))
+	text := fmt.Sprintf("Your comic: https://www.xkcd.com/%d", rand.Intn(max-min+1)+min)
+	formattedText := fmt.Sprintf("Your comic: <a href=https://www.xkcd.com/%d>here</a>", rand.Intn(max-min+1)+min)
+	sender.Location().SendFormattedText(text, formattedText)
 }
 
 func (cp *ComicPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
