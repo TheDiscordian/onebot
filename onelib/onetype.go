@@ -17,6 +17,8 @@ var (
 	DefaultPrefix string
 	// DefaultNickname is the default display name for the bot.
 	DefaultNickname string
+	// DefaultAvatar is a URL to the default avatar for the bot.
+	DefaultAvatar string
 
 	// Protocols is a map of loaded Protocols. Key is protocol name (ex: "discord")
 	Protocols *ProtocolMap

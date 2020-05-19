@@ -56,6 +56,7 @@ func main() {
 	LoadProtocols()
 	Info.Println("Loading plugins...")
 	LoadPlugins()
+	Info.Println("Plugins initialized!")
 
 	defer func() {
 		Info.Println("Shutting down...")

@@ -3,7 +3,10 @@
 package main
 
 import (
+	"errors"
+	"os"
 	"strings"
+	"sync"
 
 	"github.com/TheDiscordian/onebot/onelib"
 	"github.com/matrix-org/gomatrix"
@@ -87,6 +90,31 @@ type matrixProtocolMessage struct {
 	FormattedBody string `json:"formatted_body"`
 }
 
+func (client *matrixClient) setAvatarToFile(fPath string) error {
+	if onelib.DefaultAvatar == "" {
+		return errors.New("no default avatar set")
+	}
+	f, err := os.Open(fPath)
+	if err != nil {
+		return err
+	}
+	fInfo, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return err
+	}
+	var resp *gomatrix.RespMediaUpload
+	resp, err = client.UploadToContentRepo(f, "image/png", fInfo.Size()) // TODO don't assume png
+	if err != nil {
+		f.Close()
+		return err
+	}
+	onelib.Info.Println("Avatar set! ContentURI:", resp.ContentURI)
+	client.SetAvatarURL(resp.ContentURI)
+	f.Close()
+	return nil
+}
+
 // Load connects to Matrix, and sets up listeners. It's required for OneBot.
 // TODO store rooms as a map of locations mapped by UID
 func Load() onelib.Protocol {
@@ -114,27 +142,28 @@ func Load() onelib.Protocol {
 	}
 	syncer := client.Syncer.(*gomatrix.DefaultSyncer)
 
-	matrix := &Matrix{client: &matrixClient{Client: client}, prefix: onelib.DefaultPrefix, nickname: onelib.DefaultNickname}
-	matrix.knownMembers = make(map[onelib.UUID]*member, 1)
+	matrix := &Matrix{client: &matrixClient{Client: client}, prefix: onelib.DefaultPrefix, nickname: onelib.DefaultNickname, knownMembers: new(memberMap)}
+	matrix.knownMembers.mMap = make(map[onelib.UUID]*member, 1)
+	matrix.knownMembers.lock = new(sync.RWMutex)
 
 	syncer.OnEventType("m.room.message", func(ev *gomatrix.Event) {
 		if ev.Content["msgtype"] != nil && ev.Content["msgtype"].(string) == "m.text" {
-			msg := &matrixMessage{text: ev.Content["body"].(string)}
+			msg := &matrixMessage{text: ev.Content["body"].(string)} // FIXME just because msgtype is m.text, doesn't mean body *absolutely* exists
 			if ev.Content["format"] != nil && ev.Content["format"].(string) == "org.matrix.custom.html" {
-				msg.formattedText = ev.Content["formatted_body"].(string)
+				msg.formattedText = ev.Content["formatted_body"].(string) // FIXME just because format is org.matrix.custom.html, doesn't mean formatted_body *absolutely* exists
 			}
 			mc := &matrixClient{Client: client}
 			ml := &matrixLocation{Client: mc, uuid: onelib.UUID(ev.RoomID)}
 			var displayName string
-			if matrix.knownMembers[onelib.UUID(ev.Sender)] == nil {
+			if matrix.knownMembers.Get(onelib.UUID(ev.Sender)) == nil {
 				resp, err := client.GetDisplayName(ev.Sender)
 				if err != nil {
 					displayName = ev.Sender
 				}
 				displayName = resp.DisplayName
-				matrix.knownMembers[onelib.UUID(ev.Sender)] = &member{displayName: resp.DisplayName}
+				matrix.knownMembers.Set(onelib.UUID(ev.Sender), &member{displayName: resp.DisplayName})
 			} else {
-				displayName = matrix.knownMembers[onelib.UUID(ev.Sender)].displayName
+				displayName = matrix.knownMembers.Get(onelib.UUID(ev.Sender)).displayName
 			}
 			sender := &matrixSender{uuid: onelib.UUID(ev.Sender), username: ev.Sender, displayName: displayName, location: ml}
 			matrix.recv(onelib.Message(msg), onelib.Sender(sender))
@@ -163,6 +192,8 @@ func Load() onelib.Protocol {
 	})
 
 	client.SetDisplayName(onelib.DefaultNickname)
+	// client.setAvatarToFile(onelib.DefaultAvatar) // TODO only do this if avatar hasn't been set yet
+
 	err = matrix.client.SetStatus("online", "Test status.")
 	/*_, err = matrix.client.SendStateEvent("<DM room ID>", "im.vector.user_status", matrixAuthUser, struct {
 		Status string `json:"status"`
@@ -304,6 +335,24 @@ type member struct {
 	displayName string
 }
 
+type memberMap struct {
+	mMap map[onelib.UUID]*member
+	lock *sync.RWMutex
+}
+
+func (mm *memberMap) Get(uuid onelib.UUID) *member {
+	mm.lock.RLock()
+	mem := mm.mMap[uuid]
+	mm.lock.RUnlock()
+	return mem
+}
+
+func (mm *memberMap) Set(uuid onelib.UUID, mem *member) {
+	mm.lock.Lock()
+	mm.mMap[uuid] = mem
+	mm.lock.Unlock()
+}
+
 // Matrix is the Protocol object used for handling anything Matrix related.
 type Matrix struct {
 	/*
@@ -312,7 +361,7 @@ type Matrix struct {
 	prefix       string
 	nickname     string
 	client       *matrixClient
-	knownMembers map[onelib.UUID]*member
+	knownMembers *memberMap
 }
 
 // TODO finish this, only proof of concept right now

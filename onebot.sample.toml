@@ -1,6 +1,8 @@
 [general]
 default_prefix = ","
 default_nickname = "OneBot"
+# path to default avatar
+default_avatar = ""
 
 plugin_path = "plugins"
 plugins = ["parrot", "roll", "8ball", "tarkovbud"]

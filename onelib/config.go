@@ -38,6 +38,7 @@ func LoadConfig() {
 	}
 	DefaultPrefix = config.Get("general.default_prefix").(string)
 	DefaultNickname = config.Get("general.default_nickname").(string)
+	DefaultAvatar = config.Get("general.default_avatar").(string)
 
 	PluginDir = config.Get("general.plugin_path").(string)
 	pluginList := config.Get("general.plugins").([]interface{})
