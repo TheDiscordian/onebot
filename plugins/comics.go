@@ -37,7 +37,7 @@ func (cp *ComicPlugin) Version() string {
 	return VERSION
 }
 
-func getComicInfo(url string) (title string, imageURL string) {
+func getComicInfo(url string) (title string, imageURL string, extraText string) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return
@@ -47,8 +47,31 @@ func getComicInfo(url string) (title string, imageURL string) {
 	text := string(rawText)
 	text = text[strings.Index(text, "<title>")+7:]
 	title = text[:strings.Index(text, "</title>")]
-	text = text[strings.Index(text, "Image URL (for hotlinking/embedding): ")+38:]
-	imageURL = text[:strings.Index(text, "\n")]
+	iText := text[strings.Index(text, "Image URL (for hotlinking/embedding): ")+38:]
+	imageURL = iText[:strings.Index(iText, "\n")]
+
+	altText := "{{Title text: "
+	altTextEnd := "}}"
+	altTextPos := strings.Index(text, altText)
+	if altTextPos == -1 {
+		altText = "{{title text: "
+		altTextPos = strings.Index(text, altText)
+		if altTextPos == -1 {
+			altText = "{{alt-text: "
+			altTextPos = strings.Index(text, altText)
+			if altTextPos == -1 {
+				altText = "g\" title=\""
+				altTextEnd = "\""
+				altTextPos = strings.Index(text, altText)
+			}
+		}
+	}
+	if altTextPos == -1 {
+		return
+	}
+
+	text = text[altTextPos+len(altText):]
+	extraText = text[:strings.Index(text, altTextEnd)]
 	return
 }
 
@@ -56,9 +79,9 @@ func comic(msg onelib.Message, sender onelib.Sender) {
 	min := 200
 	max := 2307 //TODO give link to main page for newest updates
 	url := fmt.Sprintf("https://www.xkcd.com/%d", rand.Intn(max-min+1)+min)
-	title, imageURL := getComicInfo(url)
-	text := fmt.Sprintf("Your comic: \"%s\": %s", title, url)
-	formattedText := fmt.Sprintf("Your comic: <a href=%s>%s</a> (<a href=%s>Web</a>)", imageURL, title, url)
+	title, imageURL, extraText := getComicInfo(url)
+	text := fmt.Sprintf("Your comic: \"%s\": %s\n*%s*", title, url, extraText)
+	formattedText := fmt.Sprintf("Your comic: <a href=%s>%s</a> (<a href=%s>Web</a>)<br />\n<i>%s</i>", imageURL, title, url, extraText)
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
