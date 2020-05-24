@@ -105,13 +105,12 @@ func (client *matrixClient) setAvatarToFile(fPath string) error {
 	}
 	var resp *gomatrix.RespMediaUpload
 	resp, err = client.UploadToContentRepo(f, "image/png", fInfo.Size()) // TODO don't assume png
+	f.Close()
 	if err != nil {
-		f.Close()
 		return err
 	}
 	onelib.Info.Println("Avatar set! ContentURI:", resp.ContentURI)
 	client.SetAvatarURL(resp.ContentURI)
-	f.Close()
 	return nil
 }
 
