@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/TheDiscordian/onebot/onelib"
-	//	"sort"
+	"sort"
 	"sync"
 	"time"
 )
@@ -25,9 +25,28 @@ type currencyStore struct {
 	saveTimer   map[onelib.UUID]time.Time // key: [location UUID][currency type]
 }
 
-// GetAll copies every single user from "currency", and returns sorted list by Quantity+BankQuantity descending.
-//func (cs *currencyStore) GetAll(currency string, location onelib.UUID) []*CurrencyObject {
-//}
+// UserCurrencyObject is a CurrencyObject that also has a `UUID` variable.
+type UserCurrencyObject struct {
+	UUID onelib.UUID
+	*CurrencyObject
+}
+
+// GetAll copies every single user from "currency", and returns sorted list by Quantity+BankQuantity descending. Includes aliased users (which can't really be looked up).
+func (cs *currencyStore) GetAll(currency string, location onelib.UUID) (out []*UserCurrencyObject) {
+	cs.Get(currency, location, "") // FIXME this is clearly a jank thing here, this is used to ensure the location is loaded, we don't care about the result, it will load the location if it really exists. Ideally we'll move all this work into one routine.
+	cs.lock.RLock()
+	if cs.locationMap[location] == nil {
+		cs.lock.RUnlock()
+		return nil
+	}
+	out = make([]*UserCurrencyObject, 0, len(cs.locationMap[location].Currency[currency]))
+	for key, value := range cs.locationMap[location].Currency[currency] {
+		out = append(out, &UserCurrencyObject{UUID: key, CurrencyObject: &CurrencyObject{Quantity: value.Quantity, BankQuantity: value.BankQuantity, DisplayName: value.DisplayName}}) // copy
+	}
+	cs.lock.RUnlock()
+	sort.Slice(out, func(i, j int) bool { return out[i].Quantity+out[i].BankQuantity > out[j].Quantity+out[j].BankQuantity }) // sort, descending
+	return
+}
 
 // saveLocation saves a LocationObject, it does NOT update a UserObject, if a user would be receiving new currencies. A
 // save is not guaranteed to happen, but will most likely happen. Saves are intentionally delayed as the in-memory map
@@ -35,7 +54,7 @@ type currencyStore struct {
 // clusters anyways, so multiple saves isn't necessary.
 func (cs *currencyStore) saveLocation(location onelib.UUID) {
 	if time.Since(cs.saveTimer[location]) < time.Second*6 { // this value may need to be customized if under heavy load
-		onelib.Debug.Println("Skipped save...")
+		onelib.Debug.Println("Skipped save...") // FIXME perhaps if a save doesn't occur for a while, save again, just in case
 		return
 	}
 	if err := onelib.Db.PutObj(DB_TABLE, "L"+string(location), cs.locationMap[location]); err != nil {
@@ -446,6 +465,34 @@ func (cs *currencyStore) WithdrawAll(currency string, location, uuid onelib.UUID
 	return all, err
 }
 
+func (cs *currencyStore) UpdateDisplayName(currency string, location, uuid onelib.UUID, name string) {
+	cs.Get(currency, location, "") // FIXME this is clearly a jank thing here, this is used to ensure the location is loaded, we don't care about the result, it will load the location if it really exists. Ideally we'll move all this work into one routine.
+	cs.lock.RLock()
+	if cs.locationMap[location] == nil { // location doesn't exist
+		cs.lock.RUnlock()
+		return
+	}
+	if cs.locationMap[location].Currency[currency] == nil { // currency type doesn't exist
+		cs.lock.RUnlock()
+		return
+	}
+	if cs.locationMap[location].Currency[currency][uuid] == nil { // user isn't registered with that currency type
+		cs.lock.RUnlock()
+		return
+	}
+	if cs.locationMap[location].Currency[currency][uuid].DisplayName == name { // display name hasn't changed
+		cs.lock.RUnlock()
+		return
+	}
+	cs.lock.RUnlock()
+	cs.lock.Lock()
+	if cs.locationMap[location].Currency[currency][uuid].DisplayName != name { // make sure we didn't lose a race
+		cs.locationMap[location].Currency[currency][uuid].DisplayName = name
+		cs.saveLocation(location)
+	}
+	cs.lock.Unlock()
+}
+
 // LocationObject is an object representing a community, which stores all the currency values for all its users.
 type LocationObject struct {
 	Currency map[string]map[onelib.UUID]*CurrencyObject `bson:"c"` // key: [currencyType][user UUID]
@@ -453,8 +500,9 @@ type LocationObject struct {
 
 // CurrencyObject is an object containing an amount of currency.
 type CurrencyObject struct {
-	Quantity     int `bson:"q"`  // Quantity of currency
-	BankQuantity int `bson:"bQ"` // Quantity of currency in bank
+	Quantity     int    `bson:"q"`  // Quantity of currency
+	BankQuantity int    `bson:"bQ"` // Quantity of currency in bank
+	DisplayName  string `bson:"dN"` // DisplayName of the UUID who owns this CurrencyObject
 }
 
 // UserObject represents an account, and can be aliased to another UserObject via UUID. It stores all its known

@@ -65,9 +65,9 @@ func (acm *aliasConfirmMap) Delete(requester onelib.UUID) {
 }
 
 var (
-    // UserActionMap used for storing the last time an action was called
-	UserActionMap   *userMap
-    // AliasConfirmMap stores aliases waiting to be confirmed, key is requester, val is target
+	// UserActionMap used for storing the last time an action was called
+	UserActionMap *userMap
+	// AliasConfirmMap stores aliases waiting to be confirmed, key is requester, val is target
 	AliasConfirmMap *aliasConfirmMap
 )
 
@@ -187,6 +187,7 @@ func cute(msg onelib.Message, sender onelib.Sender) {
 	}
 	text, formattedText := performAction(sender.UUID(), "cute", "be cute", cuteMin, cuteMax, 0, 0, 0, cuteResponses, nil, cuteTime)
 	sender.Location().SendFormattedText(text, formattedText)
+	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
 }
 
 func chill(msg onelib.Message, sender onelib.Sender) {
@@ -236,6 +237,7 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 	}
 	text, formattedText := performAction(sender.UUID(), "chill", "chill", chillMin, chillMax, chillFineMin, chillFineMax, chillFail, chillResponses, chillNegativeResponses, chillTime)
 	sender.Location().SendFormattedText(text, formattedText)
+	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
 }
 
 func meme(msg onelib.Message, sender onelib.Sender) {
@@ -271,6 +273,7 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 	}
 	text, formattedText := performAction(sender.UUID(), "meme", "meme", memeMin, memeMax, memeFineMin, memeFineMax, memeFail, memeResponses, memeNegativeResponses, memeTime)
 	sender.Location().SendFormattedText(text, formattedText)
+	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
 }
 
 func alias(msg onelib.Message, sender onelib.Sender) {
@@ -333,6 +336,24 @@ func unalias(msg onelib.Message, sender onelib.Sender) {
 	sender.Location().SendText("Alias removed!")
 }
 
+func leaderboard(msg onelib.Message, sender onelib.Sender) {
+	rtext := []rune("Leaderboard:\n")
+	all := onecurrency.Currency.GetAll(DEFAULT_CURRENCY, onelib.UUID("global"))
+	if len(all) > 10 {
+		all = all[:10]
+	}
+	for i, uco := range all {
+		var displayName string
+		if uco.DisplayName != "" {
+			displayName = uco.DisplayName
+		} else {
+			displayName = string(uco.UUID)
+		}
+		rtext = append(rtext, []rune(fmt.Sprintf("%d. %s (%s%d)\n", i+1, displayName, DEFAULT_CURRENCY, uco.Quantity+uco.BankQuantity))...)
+	}
+	sender.Location().SendText(string(rtext))
+}
+
 func checkBal(msg onelib.Message, sender onelib.Sender) {
 	var (
 		uuid        onelib.UUID
@@ -341,6 +362,7 @@ func checkBal(msg onelib.Message, sender onelib.Sender) {
 	if text := msg.Text(); text == "" {
 		uuid = sender.UUID()
 		displayName = sender.DisplayName()
+		onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), uuid, displayName)
 	} else {
 		displayName = text[:len(text)-1]
 		if sender.Protocol() == "matrix" {
@@ -388,10 +410,12 @@ func deposit(msg onelib.Message, sender onelib.Sender) {
 		return
 	}
 	sender.Location().SendText("Not implemented.")
+	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
 }
 
 func withdraw(msg onelib.Message, sender onelib.Sender) {
 	sender.Location().SendText("Not implemented.")
+	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
 }
 
 // MoneyPlugin is an object for satisfying the Plugin interface.
@@ -414,7 +438,7 @@ func (mp *MoneyPlugin) Version() string {
 
 // Implements returns a map of commands and monitor the plugin implements.
 func (mp *MoneyPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"bal": checkBal, "balance": checkBal, "cute": cute, "chill": chill, "meme": meme, "dep": deposit, "deposit": deposit, "withdraw": withdraw, "alias": alias, "unalias": unalias, "confirmalias": confirmalias}, nil
+	return map[string]onelib.Command{"bal": checkBal, "balance": checkBal, "cute": cute, "chill": chill, "meme": meme, "dep": deposit, "deposit": deposit, "withdraw": withdraw, "alias": alias, "unalias": unalias, "confirmalias": confirmalias, "leaderboard": leaderboard, "lb": leaderboard}, nil
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.
