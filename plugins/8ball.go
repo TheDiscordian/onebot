@@ -13,7 +13,7 @@ const (
 	NAME = "8ball"
 	// LONGNAME is what's presented to the user
 	LONGNAME = "8Ball Plugin"
-	// VERSION of the script
+	// VERSION of the plugin
 	VERSION = "v0.0.0"
 )
 

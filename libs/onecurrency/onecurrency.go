@@ -14,6 +14,7 @@ import (
 // DB_TABLE the table to use for onecurrency things
 const DB_TABLE = "onecurrency_money"
 
+// Currency is an object used for accessing currency objects managed by onecurrency.
 // TODO a "GetAll(currency string) []*CurrencyObject" feature. Returns sorted list of Quantity+BankQuantity descending. Useful for leaderboards, mass bonuses.
 var Currency *currencyStore
 
@@ -445,15 +446,19 @@ func (cs *currencyStore) WithdrawAll(currency string, location, uuid onelib.UUID
 	return all, err
 }
 
+// LocationObject is an object representing a community, which stores all the currency values for all its users.
 type LocationObject struct {
 	Currency map[string]map[onelib.UUID]*CurrencyObject `bson:"c"` // key: [currencyType][user UUID]
 }
 
+// CurrencyObject is an object containing an amount of currency.
 type CurrencyObject struct {
 	Quantity     int `bson:"q"`  // Quantity of currency
 	BankQuantity int `bson:"bQ"` // Quantity of currency in bank
 }
 
+// UserObject represents an account, and can be aliased to another UserObject via UUID. It stores all its known
+// currencies for reverse-lookups.
 type UserObject struct {
 	Alias      onelib.UUID              `bson:"a"` // User alias, UUID
 	Currencies map[onelib.UUID][]string `bson:"c"` // map of location UUIDs to a list of currency types

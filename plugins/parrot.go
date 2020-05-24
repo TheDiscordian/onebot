@@ -11,7 +11,7 @@ const (
 	NAME = "parrot"
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Parrot Plugin"
-	// VERSION of the script
+	// VERSION of the plugin
 	VERSION = "v0.0.0"
 )
 

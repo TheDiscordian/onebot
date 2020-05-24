@@ -17,7 +17,7 @@ const (
 	NAME = "money"
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Currency Plugin"
-	// VERSION of the script
+	// VERSION of the plugin
 	VERSION = "v0.0.1"
 
 	// DEFAULT_CURRENCY is the default currency symbol
@@ -65,8 +65,10 @@ func (acm *aliasConfirmMap) Delete(requester onelib.UUID) {
 }
 
 var (
+    // UserActionMap used for storing the last time an action was called
 	UserActionMap   *userMap
-	AliasConfirmMap *aliasConfirmMap // key is requester, val is target
+    // AliasConfirmMap stores aliases waiting to be confirmed, key is requester, val is target
+	AliasConfirmMap *aliasConfirmMap
 )
 
 type userMap struct {
@@ -294,7 +296,7 @@ func alias(msg onelib.Message, sender onelib.Sender) {
 func confirmalias(msg onelib.Message, sender onelib.Sender) {
 	text := strings.ReplaceAll(msg.Text(), "`", "")
 	if text == "" {
-		txt := fmt.Sprintf("Confirms an alias. Usage: `%sconfirmalias <UUID>`", onelib.DefaultPrefix)
+		txt := fmt.Sprintf("Confirms an alias. Usage: '%sconfirmalias `<UUID>`'", onelib.DefaultPrefix)
 		formattedTxt := fmt.Sprintf("Confirms an alias. Usage: <code>%sconfirmalias &lt;UUID&gt;</code>", onelib.DefaultPrefix)
 		sender.Location().SendFormattedText(txt, formattedTxt)
 		return

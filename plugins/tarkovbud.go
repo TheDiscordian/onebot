@@ -11,7 +11,7 @@ const (
 	NAME = "tarkovbud"
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Tarkov Buddy Plugin"
-	// VERSION of the script
+	// VERSION of the plugin
 	VERSION = "v0.0.1"
 )
 

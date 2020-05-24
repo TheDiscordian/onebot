@@ -11,7 +11,7 @@ const (
 	NAME = "firstplugin"
 	// LONGNAME is what's presented to the user
 	LONGNAME = "First Plugin"
-	// VERSION of the script
+	// VERSION of the plugin
 	VERSION = "v0.0.0"
 )
 
