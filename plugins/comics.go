@@ -13,12 +13,12 @@ import (
 )
 
 const (
-    // NAME is same as filename, minus extension
-	NAME     = "comics"
-    // LONGNAME is what's presented to the user
+	// NAME is same as filename, minus extension
+	NAME = "comics"
+	// LONGNAME is what's presented to the user
 	LONGNAME = "The XKCD comic plugin"
-    // VERSION of the plugin
-	VERSION  = "v0.0.0"
+	// VERSION of the plugin
+	VERSION = "v0.0.0"
 )
 
 // Load returns the Plugin object.
