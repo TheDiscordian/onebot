@@ -23,9 +23,11 @@ func Load() onelib.Plugin {
 }
 
 func eightball(msg onelib.Message, sender onelib.Sender) {
+	var formattedText string
 	text := msg.Text()
 	if len(text) < 3 {
-		text = fmt.Sprintf("Predicts the future. Usage: %s8ball <y/n question>", onelib.DefaultPrefix)
+		text = fmt.Sprintf("Predicts the future. Usage: %s8ball `<y/n question>`", onelib.DefaultPrefix)
+		formattedText = fmt.Sprintf("Predicts the future. Usage: <code>%s8ball &lt;y/n question&gt;</code>", onelib.DefaultPrefix)
 	} else {
 		eightballAnswers := []string{"As I see it, yes", "It is certain", "It is decidedly so", "Most likely",
 			"Outlook good", "Signs point to yes", "Without a doubt", "Yes", "Yes, definitely",
@@ -33,9 +35,11 @@ func eightball(msg onelib.Message, sender onelib.Sender) {
 			"Better not tell you now", "Cannot predict now", "Concentrate and ask again",
 			"Don't count on it", "My reply is no", "My sources say no", "Outlook not so good",
 			"Very doubtful"}
-		text = eightballAnswers[rand.Intn(len(eightballAnswers))]
+		randn := rand.Intn(len(eightballAnswers))
+		text = eightballAnswers[randn] + "."
+		formattedText = text
 	}
-	sender.Location().SendText(text)
+	sender.Location().SendFormattedText(text, formattedText)
 }
 
 // EightBallPlugin is an object for satisfying the Plugin interface.
