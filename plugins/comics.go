@@ -44,6 +44,7 @@ func getComicInfo(url string) (title string, imageURL string, extraText string) 
 	}
 	var rawText []byte
 	rawText, _ = ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 	text := string(rawText)
 	text = text[strings.Index(text, "<title>")+7:]
 	title = text[:strings.Index(text, "</title>")]
