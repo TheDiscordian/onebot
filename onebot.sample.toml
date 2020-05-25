@@ -5,7 +5,7 @@ default_nickname = "OneBot"
 default_avatar = ""
 
 plugin_path = "plugins"
-plugins = ["parrot", "roll", "8ball", "tarkovbud", "money", "comics"]
+plugins = ["parrot", "roll", "8ball", "tarkovbud", "money", "comics", "bashquotes"]
 
 protocol_path = "protocols"
 protocols = ["matrix"]
