@@ -47,7 +47,7 @@ func (bp *BashPlugin) Version() string {
 }
 
 func seekN(s, substr string, count int) string {
-	for c := count; c > 0; c-- {
+	for c := count; c >= 0; c-- {
 		s = s[strings.Index(s, substr)+len(substr):]
 	}
 	return s
