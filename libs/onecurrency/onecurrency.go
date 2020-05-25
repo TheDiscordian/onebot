@@ -92,80 +92,6 @@ func (cs *currencyStore) loadUser(uuid onelib.UUID) *UserObject {
 	return dbObj
 }
 
-// Alias sets an alias to the target UUID.
-func (cs *currencyStore) Alias(uuid, targetUUID onelib.UUID) error {
-	cs.lock.Lock()
-	tuObj := cs.userMap[targetUUID]
-	if tuObj == nil {
-		tuObj = cs.loadUser(targetUUID)
-		cs.userMap[targetUUID] = tuObj
-		if tuObj == nil {
-			cs.lock.Unlock()
-			return errors.New("target UUID doesn't resolve to a known user")
-		}
-	}
-	if tuObj.Alias != onelib.UUID("") {
-		cs.lock.Unlock()
-		return errors.New("target UUID has an alias")
-	}
-	uObj := cs.userMap[uuid]
-	if uObj == nil {
-		uObj = cs.loadUser(uuid)
-		cs.userMap[uuid] = uObj
-		if uObj == nil {
-			uObj = new(UserObject)
-			cs.userMap[uuid] = uObj
-			cs.userMap[uuid].Currencies = make(map[onelib.UUID][]string, 1)
-		}
-	}
-	uObj.Alias = targetUUID
-	cs.saveUser(uuid)
-	cs.lock.Unlock()
-	return nil
-}
-
-// UnAlias sets removes an alias from the UUID.
-func (cs *currencyStore) UnAlias(uuid onelib.UUID) {
-	cs.lock.Lock()
-	uObj := cs.userMap[uuid]
-	if uObj == nil {
-		uObj = cs.loadUser(uuid)
-		cs.userMap[uuid] = uObj
-		if uObj == nil {
-			cs.lock.Unlock()
-			return
-		}
-	}
-	uObj.Alias = ""
-	cs.saveUser(uuid)
-	cs.lock.Unlock()
-}
-
-func (cs *currencyStore) fetchAlias(uuid onelib.UUID) (err error) {
-	tuObj := cs.userMap[uuid]
-	if tuObj == nil {
-		tuObj = cs.loadUser(uuid)
-		if tuObj == nil {
-			err = fmt.Errorf("alias lookup %s failed", uuid)
-		} else {
-			cs.userMap[uuid] = tuObj
-		}
-	}
-	return
-}
-
-// assumes read lock.
-func (cs *currencyStore) lookupAlias(uuid onelib.UUID) (err error) {
-	tuObj := cs.userMap[uuid]
-	if tuObj == nil {
-		tuObj = cs.loadUser(uuid) // FIXME this db load isn't ever saved to a map
-		if tuObj == nil {
-			err = fmt.Errorf("alias lookup %s failed", uuid)
-		}
-	}
-	return
-}
-
 // _get returns a pointer to the data in a target CurrencyObject. It assumes it's in a read lock. ruuid is always set,
 // but cObj is only set if both the location uuid and user uuid point to valid locations. err being set doesn't mean
 // cObj didn't get set (like on a failed alias lookup). If alias lookup failed, and the calling uuid doesn't have the
@@ -184,12 +110,9 @@ func (cs *currencyStore) _get(currency string, location, uuid onelib.UUID) (ruui
 		return
 	}
 
-	if uObj.Alias != "" {
+	if alias, _ := onelib.Alias.Get(ruuid); alias != "" {
 		onelib.Debug.Println("Alias not empty")
-		err = cs.lookupAlias(uObj.Alias)
-		if err == nil {
-			ruuid = uObj.Alias
-		}
+		ruuid = alias
 	}
 	cObj = lObj.Currency[currency][ruuid]
 	if cObj == nil {
@@ -207,12 +130,9 @@ func (cs *currencyStore) __get(currency string, location, uuid onelib.UUID, uObj
 		return
 	}
 
-	if uObj.Alias != "" {
+	if alias, _ := onelib.Alias.Get(ruuid); alias != "" {
 		onelib.Debug.Println("Alias not empty")
-		err = cs.lookupAlias(uObj.Alias)
-		if err == nil {
-			ruuid = uObj.Alias
-		}
+		ruuid = alias
 	}
 	cObj = lObj.Currency[currency][ruuid]
 	if cObj == nil {
@@ -508,7 +428,6 @@ type CurrencyObject struct {
 // UserObject represents an account, and can be aliased to another UserObject via UUID. It stores all its known
 // currencies for reverse-lookups.
 type UserObject struct {
-	Alias      onelib.UUID              `bson:"a"` // User alias, UUID
 	Currencies map[onelib.UUID][]string `bson:"c"` // map of location UUIDs to a list of currency types
 }
 

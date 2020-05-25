@@ -155,35 +155,36 @@ func performAction(uuid onelib.UUID, actionName, actionText string, actionMinPay
 
 func cute(msg onelib.Message, sender onelib.Sender) {
 	const (
-		cuteMax  = 300
+		cuteMax  = 245
 		cuteMin  = 5
-		cuteTime = time.Hour * 3 // time until command can be called again
+		cuteTime = time.Minute * 150 // time until command can be called again
 	)
 	cuteResponses := [][2]string{
-		{"You help Miles build robots and gain %s%d!", "You help Miles build robots and gain <strong>%s%d</strong>!"},
-		{"You go to a comedy show with Devin and gain %s%d!", "You go to a comedy show with Devin and gain <strong>%s%d</strong>!"},
-		{"You spend all day painting chicken nuggets while eating chicken nuggets with Paulita and gain %s%d.", "You spend all day painting chicken nuggets while eating chicken nuggets with Paulita and gain <strong>%s%d</strong>."},
-		{"You join Autumn on one of her nightly travels, gaining %s%d.", "You join Autumn on one of her nightly travels, gaining <strong>%s%d</strong>."},
-		{"You go rock climbing with Randy the trash panda and gain %s%d!", "You go rock climbing with Randy the trash panda and gain <strong>%s%d</strong>!"},
-		{"You watch movies with Lola and gain %s%d.", "You watch movies with Lola and gain <strong>%s%d</strong>."},
-		{"Lucille shows you her rock collection and you gain %s%d from the experience!", "Lucille shows you her rock collection and you gain <strong>%s%d</strong> from the experience!"},
-		{"You go surfing with Perry, gaining %s%d.", "You go surfing with Perry, gaining <strong>%s%d</strong>."},
-		{"You join Francis the roar and go firefighting! You gained %s%d.", "You join Francis the roar and go firefighting! You gained <strong>%s%d</strong>."},
-		{"You join Henry in doing commentating on sports games, you're paid %s%d!", "You join Henry in doing commentating on sports games, you're paid <strong>%s%d</strong>!"},
-		{"You spend the day reading with Veronica and gain %s%d.", "You spend the day reading with Veronica and gain <strong>%s%d</strong>."},
-		{"You help Aimee plan a red carpet event and get paid %s%d.", "You help Aimee plan a red carpet event and get paid <strong>%s%d</strong>."},
-		{"You help Winston make a cullinary delight and gain %s%d.", "You help Winston make a cullinary delight and gain <strong>%s%d</strong>."},
-		{"You spend the day doing artwork with Esmeralda and gain %s%d.", "You spend the day doing artwork with Esmeralda and gain <strong>%s%d</strong>."},
-		{"You play soccer with Paco and gain %s%d.", "You play soccer with Paco and gain <strong>%s%d</strong>."},
-		{"You study medicine with Jessica, surprisingly you're paid %s%d to do this!", "You study medicine with Jessica, surprisingly you're paid <strong>%s%d</strong> to do this!"},
-		{"Hang out with Candy during the annual Squishmallow Egg Hunt, you gain %s%d!", "Hang out with Candy during the annual Squishmallow Egg Hunt, you gain <strong>%s%d</strong>!"},
-		{"You go hiking with Rodrigo and gain %s%d.", "You go hiking with Rodrigo and gain <strong>%s%d</strong>."},
-		{"You help design fashion with Matt the manitee and get paid %s%d for your designs!", "You help design fashion with Matt the manitee and get paid <strong>%s%d</strong> for your designs!"},
-		{"You find and help identify treasure with Violet, your cut is %s%d.", "You find and help identify treasure with Violet, your cut is <strong>%s%d</strong>."},
-		{"You help Zoe with restaurant planning. She pays you %s%d for your time.", "You help Zoe with restaurant planning. She pays you <strong>%s%d</strong> for your time."},
-		{"You cuddle a cat-girl and gain %s%d.", "You cuddle a cat-girl and gain <strong>%s%d</strong>."},
-		{"Karina teaches you how to hack! You hack a bank, and earn %s%d!", "Karina teaches you how to hack! You hack a bank, and earn <strong>%s%d</strong>!"},
-		{"You plant tulips with Roxy and gain %s%d.", "You plant tulips with Roxy and gain <strong>%s%d</strong>."},
+		{"You help Miles build robots and gain **%s%d**!", "You help Miles build robots and gain <strong>%s%d</strong>!"},
+		{"You go to a comedy show with Devin and gain **%s%d**!", "You go to a comedy show with Devin and gain <strong>%s%d</strong>!"},
+		{"You spend all day painting chicken nuggets while eating chicken nuggets with Paulita and gain **%s%d**.", "You spend all day painting chicken nuggets while eating chicken nuggets with Paulita and gain <strong>%s%d</strong>."},
+		{"You join Autumn on one of her nightly travels, gaining **%s%d**.", "You join Autumn on one of her nightly travels, gaining <strong>%s%d</strong>."},
+		{"You go rock climbing with Randy the trash panda and gain **%s%d**!", "You go rock climbing with Randy the trash panda and gain <strong>%s%d</strong>!"},
+		{"You watch movies with Lola and gain **%s%d**.", "You watch movies with Lola and gain <strong>%s%d</strong>."},
+		{"Lucille shows you her rock collection and you gain **%s%d** from the experience!", "Lucille shows you her rock collection and you gain <strong>%s%d</strong> from the experience!"},
+		{"You go surfing with Perry, gaining **%s%d**.", "You go surfing with Perry, gaining <strong>%s%d</strong>."},
+		{"You join Francis the roar and go firefighting! You gained **%s%d**.", "You join Francis the roar and go firefighting! You gained <strong>%s%d</strong>."},
+		{"You join Henry in doing commentating on sports games, you're paid **%s%d**!", "You join Henry in doing commentating on sports games, you're paid <strong>%s%d</strong>!"},
+		{"You spend the day reading with Veronica and gain **%s%d**.", "You spend the day reading with Veronica and gain <strong>%s%d</strong>."},
+		{"You help Aimee plan a red carpet event and get paid **%s%d**.", "You help Aimee plan a red carpet event and get paid <strong>%s%d</strong>."},
+		{"You help Winston make a cullinary delight and gain **%s%d**.", "You help Winston make a cullinary delight and gain <strong>%s%d</strong>."},
+		{"You spend the day doing artwork with Esmeralda and gain **%s%d**.", "You spend the day doing artwork with Esmeralda and gain <strong>%s%d</strong>."},
+		{"You play soccer with Paco and gain **%s%d**.", "You play soccer with Paco and gain <strong>%s%d</strong>."},
+		{"You study medicine with Jessica, surprisingly you're paid **%s%d** to do this!", "You study medicine with Jessica, surprisingly you're paid <strong>%s%d</strong> to do this!"},
+		{"Hang out with Candy during the annual Squishmallow Egg Hunt, you gain **%s%d**!", "Hang out with Candy during the annual Squishmallow Egg Hunt, you gain <strong>%s%d</strong>!"},
+		{"You go hiking with Rodrigo and gain **%s%d**.", "You go hiking with Rodrigo and gain <strong>%s%d</strong>."},
+		{"You help design fashion with Matt the manitee and get paid **%s%d** for your designs!", "You help design fashion with Matt the manitee and get paid <strong>%s%d</strong> for your designs!"},
+		{"You find and help identify treasure with Violet, your cut is **%s%d**.", "You find and help identify treasure with Violet, your cut is <strong>%s%d</strong>."},
+		{"You help Zoe with restaurant planning. She pays you **%s%d** for your time.", "You help Zoe with restaurant planning. She pays you <strong>%s%d</strong> for your time."},
+		{"You cuddle a cat-girl and gain **%s%d**.", "You cuddle a cat-girl and gain <strong>%s%d</strong>."},
+		{"Karina teaches you how to hack! You hack a bank, and earn **%s%d**!", "Karina teaches you how to hack! You hack a bank, and earn <strong>%s%d</strong>!"},
+		{"You plant tulips with Roxy and gain **%s%d**.", "You plant tulips with Roxy and gain <strong>%s%d</strong>."},
+		{"Your favourite Animal Crossing villager gives you **%s%d**!", "Your favourite Animal Crossing villager gives you <strong>%s%d</strong>!"},
 	}
 	text, formattedText := performAction(sender.UUID(), "cute", "be cute", cuteMin, cuteMax, 0, 0, 0, cuteResponses, nil, cuteTime)
 	sender.Location().SendFormattedText(text, formattedText)
@@ -200,40 +201,46 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		chillTime    = time.Minute * 30 // time until command can be called again
 	)
 	chillResponses := [][2]string{
-		{"Smoke weed with Snoop Dogg and gain %s%d!", "Smoke weed with Snoop Dogg and gain <strong>%s%d</strong>!"},
-		{"You play some 100%% Orange Juice with your friends. It's a good time, you gain %s%d.", "You play some 100%% Orange Juice with your friends. It's a good time, you gain <strong>%s%d</strong>."},
-		{"You roll a bad blunt, but Snoop Dogg is too high to notice! Good job, have %s%d!", "You roll a bad blunt, but Snoop Dogg is too high to notice! Good job, have <strong>%s%d</strong>!"},
-		{"You drop acid and experience another reality. You gain %s%d.", "You drop acid and experience another reality. You gain <strong>%s%d</strong>."},
-		{"You fuck your friend's mother and she pays YOU %s%d!", "You fuck your friend's mother and she pays YOU <strong>%s%d</strong>!"},
-		{"The weed hit you just right, gain %s%d!", "The weed hit you just right, gain <strong>%s%d</strong>!"},
-		{"You shoot up some scrubs in an FPS and gain %s%d.", "You shoot up some scrubs in an FPS and gain <strong>%s%d</strong>."},
-		{"You vibe out and listen to some music. After a while you gain %s%d.", "You vibe out and listen to some music. After a while you gain <strong>%s%d</strong>."},
-		{"You finish a round of gaming and your score ends in 420! You gain %s%d from the experience.", "You finish a round of gaming and your score ends in 420! You gain <strong>%s%d</strong> from the experience."},
-		{"Your Second Life empire is booming, you gain %s%d.", "Your Second Life empire is booming, you gain <strong>%s%d</strong>."},
-		{"You made a nice vape cloud, gain %s%d.", "You made a nice vape cloud, gain <strong>%s%d</strong>."},
-		{"You blew some killer smoke rings and gained %s%d.", "You blew some killer smoke rings and gained <strong>%s%d</strong>."},
-		{"You meet your favourite band, and have a good time. You gain %s%d from selling the signed merch you got afterwards.", "You meet your favourite band, and have a good time. You gain <strong>%s%d</strong> from selling the signed merch you got afterwards."},
-		{"You get the fastest speedrun out of all your friends in Mario. It feels good, and you gain %s%d.", "You get the fastest speedrun out of all your friends in Mario. It feels good, and you gain <strong>%s%d</strong>."},
-		{"You get the highest score on a game with your friends. You gain pride and %s%d.", "You get the highest score on a game with your friends. You gain pride and <strong>%s%d</strong>."},
-		{"You roll a fat blunt and smoke it, gain %s%d.", "You roll a fat blunt and smoke it, gain <strong>%s%d</strong>."},
-		{"You have a nap and gain %s%d.", "You have a nap and gain <strong>%s%d</strong>."},
-		{"You enter a gaming tournament and win %s%d, good job!", "You enter a gaming tournament and win <strong>%s%d</strong>, good job!"},
-		{"It's 420. Smoke a bowl and gain %s%d.", "It's 420. Smoke a bowl and gain <strong>%s%d</strong>."},
+		{"Smoke weed with Snoop Dogg and gain **%s%d**!", "Smoke weed with Snoop Dogg and gain <strong>%s%d</strong>!"},
+		{"You play some 100%% Orange Juice with your friends. It's a good time, you gain **%s%d**.", "You play some 100%% Orange Juice with your friends. It's a good time, you gain <strong>%s%d</strong>."},
+		{"You roll a bad blunt, but Snoop Dogg is too high to notice! Good job, have **%s%d**!", "You roll a bad blunt, but Snoop Dogg is too high to notice! Good job, have <strong>%s%d</strong>!"},
+		{"You drop acid and experience another reality. You gain **%s%d**.", "You drop acid and experience another reality. You gain <strong>%s%d</strong>."},
+		{"You fuck your friend's mother and she pays YOU **%s%d**!", "You fuck your friend's mother and she pays YOU <strong>%s%d</strong>!"},
+		{"The weed hit you just right, gain **%s%d**!", "The weed hit you just right, gain <strong>%s%d</strong>!"},
+		{"You shoot up some scrubs in an FPS and gain **%s%d**.", "You shoot up some scrubs in an FPS and gain <strong>%s%d</strong>."},
+		{"You vibe out and listen to some music. After a while you gain **%s%d**.", "You vibe out and listen to some music. After a while you gain <strong>%s%d</strong>."},
+		{"You finish a round of gaming and your score ends in 420! You gain **%s%d** from the experience.", "You finish a round of gaming and your score ends in 420! You gain <strong>%s%d</strong> from the experience."},
+		{"Your Second Life empire is booming, you gain **%s%d**.", "Your Second Life empire is booming, you gain <strong>%s%d</strong>."},
+		{"You made a nice vape cloud, gain **%s%d**.", "You made a nice vape cloud, gain <strong>%s%d</strong>."},
+		{"You blew some killer smoke rings and gained **%s%d**.", "You blew some killer smoke rings and gained <strong>%s%d</strong>."},
+		{"You meet your favourite band, and have a good time. You gain **%s%d** from selling the signed merch you got afterwards.", "You meet your favourite band, and have a good time. You gain <strong>%s%d</strong> from selling the signed merch you got afterwards."},
+		{"You get the fastest speedrun out of all your friends in Mario. It feels good, and you gain **%s%d**.", "You get the fastest speedrun out of all your friends in Mario. It feels good, and you gain <strong>%s%d</strong>."},
+		{"You get the highest score on a game with your friends. You gain pride and **%s%d**.", "You get the highest score on a game with your friends. You gain pride and <strong>%s%d</strong>."},
+		{"You roll a fat blunt and smoke it, gain **%s%d**.", "You roll a fat blunt and smoke it, gain <strong>%s%d</strong>."},
+		{"You have a nap and gain **%s%d**.", "You have a nap and gain <strong>%s%d</strong>."},
+		{"You enter a gaming tournament and win **%s%d**, good job!", "You enter a gaming tournament and win <strong>%s%d</strong>, good job!"},
+		{"It's 420. Smoke a bowl and gain **%s%d**.", "It's 420. Smoke a bowl and gain <strong>%s%d</strong>."},
+		{"You found a nugget of weed you forgot about, awesome! Gain **%s%d**.", "You found a nugget of weed you forgot about, awesome! Gain <strong>%s%d</strong>."},
+		{"Turns out you had more beer than you thought in the back of the fridge, cool! Gain **%s%d**.", "Turns out you had more beer than you thought in the back of the fridge, cool! Gain <strong>%s%d</strong>."},
+		{"You find some spare coils for your vape you forgot about, score! Gain **%s%d**.", "You find some spare coils for your vape you forgot about, score! Gain <strong>%s%d</strong>."},
 	}
 	chillNegativeResponses := [][2]string{
-		{"You roll a bad blunt and Snoop Dogg notices, pay a fine of %s%d...", "You roll a bad blunt and Snoop Dogg notices, pay a fine of <strong>%s%d</strong>..."},
-		{"You play some 100%% Orange Juice with your friends. You come in last and lose %s%d.", "You play some 100%% Orange Juice with your friends. You come in last and lose <strong>%s%d</strong>."},
-		{"You have a bad trip and end up fucking your friend's mother. Pay a fine of %s%d.", "You have a bad trip and end up fucking your friend's mother. Pay a fine of <strong>%s%d</strong>."},
-		{"You fuck your friend's mother, but you don't perform very well and she charges you %s%d for the inconvenience.", "You fuck your friend's mother, but you don't perform very well and she charges you <strong>%s%d</strong> for the inconvenience."},
-		{"You play some Monopoly and the cold hard reality of capitalism sets in... you lose %s%d.", "You play some Monopoly and the cold hard reality of capitalism sets in... you lose <strong>%s%d</strong>."},
-		{"You ruin a chill time and turn it into an unchill time, pay a fine of %s%d.", "You ruin a chill time and turn it into an unchill time, pay a fine of <strong>%s%d</strong>."},
-		{"You go to fill your bowl, but spill all your weed costing you %s%d 💔.", "You go to fill your bowl, but spill all your weed costing you <strong>%s%d</strong> 💔."},
-		{"You're in a good mood so you buy your friends some games costing you %s%d.", "You're in a good mood so you buy your friends some games costing you <strong>%s%d</strong>."},
-		{"Your joint unravels, pay %s%d.", "Your joint unravels, pay <strong>%s%d</strong>."},
-		{"You meet your favourite band, and have a good time. Unfortunately they board up in your place for a while, costing you %s%d.", "You meet your favourite band, and have a good time. Unfortunately they board up in your place for a while, costing you <strong>%s%d</strong>."},
-		{"You try to re-toast your sub, but burn it and lose %s%d.", "You try to re-toast your sub, but burn it and lose <strong>%s%d</strong>."},
-		{"You fall asleep on the job and lose %s%d!", "You fall asleep on the job and lose <strong>%s%d</strong>!"},
-		{"You enter a gaming tournament and lose! You paid %s%d to enter, so you're down that.", "You enter a gaming tournament and lose! You paid <strong>%s%d</strong> to enter, so you're down that."},
+		{"You roll a bad blunt and Snoop Dogg notices, pay a fine of **%s%d**...", "You roll a bad blunt and Snoop Dogg notices, pay a fine of <strong>%s%d</strong>..."},
+		{"You play some 100%% Orange Juice with your friends. You come in last and lose **%s%d**.", "You play some 100%% Orange Juice with your friends. You come in last and lose <strong>%s%d</strong>."},
+		{"You have a bad trip and end up fucking your friend's mother. Pay a fine of **%s%d**.", "You have a bad trip and end up fucking your friend's mother. Pay a fine of <strong>%s%d</strong>."},
+		{"You fuck your friend's mother, but you don't perform very well and she charges you **%s%d** for the inconvenience.", "You fuck your friend's mother, but you don't perform very well and she charges you <strong>%s%d</strong> for the inconvenience."},
+		{"You play some Monopoly and the cold hard reality of capitalism sets in... you lose **%s%d**.", "You play some Monopoly and the cold hard reality of capitalism sets in... you lose <strong>%s%d</strong>."},
+		{"You ruin a chill time and turn it into an unchill time, pay a fine of **%s%d**.", "You ruin a chill time and turn it into an unchill time, pay a fine of <strong>%s%d</strong>."},
+		{"You go to fill your bowl, but spill all your weed costing you **%s%d** 💔.", "You go to fill your bowl, but spill all your weed costing you <strong>%s%d</strong> 💔."},
+		{"You're in a good mood so you buy your friends some games costing you **%s%d**.", "You're in a good mood so you buy your friends some games costing you <strong>%s%d</strong>."},
+		{"Your joint unravels, pay **%s%d**.", "Your joint unravels, pay <strong>%s%d</strong>."},
+		{"You meet your favourite band, and have a good time. Unfortunately they board up in your place for a while, costing you **%s%d**.", "You meet your favourite band, and have a good time. Unfortunately they board up in your place for a while, costing you <strong>%s%d</strong>."},
+		{"You try to re-toast your sub, but burn it and lose **%s%d**.", "You try to re-toast your sub, but burn it and lose <strong>%s%d</strong>."},
+		{"You fall asleep on the job and lose **%s%d**!", "You fall asleep on the job and lose <strong>%s%d</strong>!"},
+		{"You enter a gaming tournament and lose! You paid **%s%d** to enter, so you're down that.", "You enter a gaming tournament and lose! You paid <strong>%s%d</strong> to enter, so you're down that."},
+		{"You run out of weed! You pay in sadness and **%s%d** 😞.", "You run out of weed! You pay in sadness and <strong>%s%d</strong> 😞."},
+		{"You run out of beer! You throw up and pay **%s%d** to people for taking care of your drunk ass.", "You run out of beer! You throw up and pay <strong>%s%d</strong> to people for taking care of your drunk ass."},
+		{"You take a dry hit from your vape and lose **%s%d**.", "You take a dry hit from your vape and lose <strong>%s%d</strong>."},
 	}
 	text, formattedText := performAction(sender.UUID(), "chill", "chill", chillMin, chillMax, chillFineMin, chillFineMax, chillFail, chillResponses, chillNegativeResponses, chillTime)
 	sender.Location().SendFormattedText(text, formattedText)
@@ -250,26 +257,30 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		memeTime    = time.Second * 260 // time until command can be called again
 	)
 	memeResponses := [][2]string{
-		{"Dab on all them haters and gain %s%d!", "Dab on all them haters and gain <strong>%s%d</strong>!"},
-		{"You pull your dick out for Harambe and gain %s%d for your service.", "You pull your dick out for Harambe and gain <strong>%s%d</strong> for your service."},
-		{"You did it for the Vine and got %s%d.", "You did it for the Vine and got <strong>%s%d</strong>."},
-		{"You say \"bork\" in a large crowd. Many assume you're homeless and donate %s%d to you.", "You say \"bork\" in a large crowd. Many assume you're homeless and donate <strong>%s%d</strong> to you."},
-		{"You vibe out to some penis music. An agent is so impressed he calls you at home and offers you a %s%d contract!", "You vibe out to some penis music. An agent is so impressed he calls you at home and offers you a <strong>%s%d</strong> contract!"},
-		{"You score 69420 on your favourite game, nice, have %s%d!", "You score 69420 on your favourite game, nice, have <strong>%s%d</strong>!"},
-		{"You find millions of peaches. Wow! Gain %s%d.", "You find millions of peaches. Wow! Gain <strong>%s%d</strong>."},
-		{"You spot a government surveilance drone and protect your privacy. Gain %s%d for your service.", "You spot a government surveilance drone and protect your privacy. Gain <strong>%s%d</strong> for your service."},
-		{"You convince someone that birds aren't real, doing the world a service, and gain %s%d.", "You convince someone that birds aren't real, doing the world a service, and gain <strong>%s%d</strong>."},
-		{"You make an original Steamed Hams video and gain %s%d.", "You make an original Steamed Hams video and gain <strong>%s%d</strong>."},
+		{"Dab on all them haters and gain **%s%d**!", "Dab on all them haters and gain <strong>%s%d</strong>!"},
+		{"You pull your dick out for Harambe and gain **%s%d** for your service.", "You pull your dick out for Harambe and gain <strong>%s%d</strong> for your service."},
+		{"You did it for the Vine and got **%s%d**.", "You did it for the Vine and got <strong>%s%d</strong>."},
+		{"You say \"bork\" in a large crowd. Many assume you're homeless and donate **%s%d** to you.", "You say \"bork\" in a large crowd. Many assume you're homeless and donate <strong>%s%d</strong> to you."},
+		{"You vibe out to some penis music. An agent is so impressed he calls you at home and offers you a **%s%d** contract!", "You vibe out to some penis music. An agent is so impressed he calls you at home and offers you a <strong>%s%d</strong> contract!"},
+		{"You score 69420 on your favourite game, nice, have **%s%d**!", "You score 69420 on your favourite game, nice, have <strong>%s%d</strong>!"},
+		{"You find millions of peaches. Wow! Gain **%s%d**.", "You find millions of peaches. Wow! Gain <strong>%s%d</strong>."},
+		{"You spot a government surveilance drone and protect your privacy. Gain **%s%d** for your service.", "You spot a government surveilance drone and protect your privacy. Gain <strong>%s%d</strong> for your service."},
+		{"You convince someone that birds aren't real, doing the world a service, and gain **%s%d**.", "You convince someone that birds aren't real, doing the world a service, and gain <strong>%s%d</strong>."},
+		{"You make an original Steamed Hams video and gain **%s%d**.", "You make an original Steamed Hams video and gain <strong>%s%d</strong>."},
+		{"You make a nice meme, and it hits the Reddit frontpage! Your upvotes are worth **%s%d**.", "You make a nice meme, and it hits the Reddit frontpage! Your upvotes are worth <strong>%s%d</strong>."},
+		{"Someone on r/okaybuddyretard thinks you're genuinely retarded! Good job, have **%s%d**.", "Someone on r/okaybuddyretard thinks you're genuinely retarded! Good job, have <strong>%s%d</strong>."},
 	}
 	memeNegativeResponses := [][2]string{
-		{"You talked shit, and got hit, pay a fine of %s%d.", "You talked shit, and got hit, pay a fine of <strong>%s%d</strong>."},
-		{"You talked shit about Harambe and were forced to pay a fine of %s%d.", "You talked shit about Harambe and were forced to pay a fine of <strong>%s%d</strong>."},
-		{"You didn't do it for the Vine, in fact, you didn't do it at all! Pay a fine of %s%d...", "You didn't do it for the Vine, in fact, you didn't do it at all! Pay a fine of <strong>%s%d</strong>..."},
-		{"You catch the covids and have to pay %s%d in medical expenses.", "You catch the covids and have to pay <strong>%s%d</strong> in medical expenses."},
-		{"You plank in public and take pictures, you pay in shame and %s%d.", "You plank in public and take pictures, you pay in shame and <strong>%s%d</strong>."},
-		{"A crowd of people gang up on you and claim that birds are in fact \"real\". You're beaten, and lose %s%d.", "A crowd of people gang up on you and claim that birds are in fact \"real\". You're beaten, and lose <strong>%s%d</strong>."},
-		{"You shout the N Word in an urban environment and get robbed for %s%d.", "You shout the N Word in an urban environment and get robbed for <strong>%s%d</strong>."},
-		{"You let your memes be dreams and lost %s%d.", "You let your memes be dreams and lost <strong>%s%d</strong>."},
+		{"You talked shit, and got hit, pay a fine of **%s%d**.", "You talked shit, and got hit, pay a fine of <strong>%s%d</strong>."},
+		{"You talked shit about Harambe and were forced to pay a fine of **%s%d**.", "You talked shit about Harambe and were forced to pay a fine of <strong>%s%d</strong>."},
+		{"You didn't do it for the Vine, in fact, you didn't do it at all! Pay a fine of **%s%d**...", "You didn't do it for the Vine, in fact, you didn't do it at all! Pay a fine of <strong>%s%d</strong>..."},
+		{"You catch the covids and have to pay **%s%d** in medical expenses.", "You catch the covids and have to pay <strong>%s%d</strong> in medical expenses."},
+		{"You plank in public and take pictures, you pay in shame and **%s%d**.", "You plank in public and take pictures, you pay in shame and <strong>%s%d</strong>."},
+		{"A crowd of people gang up on you and claim that birds are in fact \"real\". You're beaten, and lose **%s%d**.", "A crowd of people gang up on you and claim that birds are in fact \"real\". You're beaten, and lose <strong>%s%d</strong>."},
+		{"You shout the N Word in an urban environment and get robbed for **%s%d**.", "You shout the N Word in an urban environment and get robbed for <strong>%s%d</strong>."},
+		{"You let your memes be dreams and lost **%s%d**.", "You let your memes be dreams and lost <strong>%s%d</strong>."},
+		{"You think you made a decent meme, but the mods delete it and take **%s%d** from you 😰.", "You think you made a decent meme, but the mods delete it and take <strong>%s%d</strong> from you 😰."},
+		{"You're caught being untarded on r/okaybuddyretard and are forced to pay **%s%d** to Big Chungus.", "You're caught being untarded on r/okaybuddyretard and are forced to pay <strong>%s%d</strong> to Big Chungus."},
 	}
 	text, formattedText := performAction(sender.UUID(), "meme", "meme", memeMin, memeMax, memeFineMin, memeFineMax, memeFail, memeResponses, memeNegativeResponses, memeTime)
 	sender.Location().SendFormattedText(text, formattedText)
@@ -284,12 +295,6 @@ func alias(msg onelib.Message, sender onelib.Sender) {
 		sender.Location().SendFormattedText(txt, formattedTxt)
 		return
 	}
-	/*err := onecurrency.Currency.Alias(sender.UUID(), onelib.UUID(text))
-	if err != nil {
-		sender.Location().SendText(fmt.Sprintf("Alias failed (%s): %s", text, err))
-		return
-	}
-	sender.Location().SendText("Alias succeeded!")*/
 	AliasConfirmMap.Set(sender.UUID(), onelib.UUID(text))
 	txt := fmt.Sprintf("Almost done, just type '%sconfirmalias `%s`' in a room the bot can see on the target account, and you're set!", onelib.DefaultPrefix, sender.UUID())
 	formattedTxt := fmt.Sprintf("Almost done, just type <code>%sconfirmalias `%s`</code> in a room the bot can see on the target account, and you're set!", onelib.DefaultPrefix, sender.UUID())
@@ -315,7 +320,7 @@ func confirmalias(msg onelib.Message, sender onelib.Sender) {
 		sender.Location().SendText(txt)
 		return
 	}
-	err := onecurrency.Currency.Alias(onelib.UUID(text), sender.UUID())
+	err := onelib.Alias.Set(onelib.UUID(text), sender.UUID())
 	if err != nil {
 		sender.Location().SendText(fmt.Sprintf("Alias failed (%s): %s", text, err))
 		return
@@ -332,7 +337,7 @@ func unalias(msg onelib.Message, sender onelib.Sender) {
 		sender.Location().SendFormattedText(txt, formattedTxt)
 		return
 	}
-	onecurrency.Currency.UnAlias(sender.UUID())
+	onelib.Alias.UnAlias(sender.UUID())
 	sender.Location().SendText("Alias removed!")
 }
 
@@ -393,7 +398,7 @@ func checkBal(msg onelib.Message, sender onelib.Sender) {
 	if err != nil {
 		onelib.Error.Println(err)
 	}
-	text := fmt.Sprintf("%s's balance:\n\nOn-hand | Bank | Net\n%s%d    | %s%d   | %s%d", displayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity, DEFAULT_CURRENCY, cObj.Quantity+cObj.BankQuantity)
+	text := fmt.Sprintf("%s's balance:\n\nOn-hand | Bank | Net\n%s%d    | **%s%d**   | **%s%d**", displayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity, DEFAULT_CURRENCY, cObj.Quantity+cObj.BankQuantity)
 	formattedText := fmt.Sprintf("<strong>%s's balance:</strong><br /><table><tr><th> On-hand </th><th> Bank </th><th> Net </th></tr><br /><tr><th> <strong>%s%d</strong>  </th><th>  <strong>%s%d</strong>  </th><th> <strong>%s%d</strong></th></tr></table>", displayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity, DEFAULT_CURRENCY, cObj.Quantity+cObj.BankQuantity)
 	sender.Location().SendFormattedText(text, formattedText)
 }
@@ -406,7 +411,7 @@ func deposit(msg onelib.Message, sender onelib.Sender) {
 			sender.Location().SendText(fmt.Sprintf("Nothing to deposit!"))
 			return
 		}
-		sender.Location().SendText(fmt.Sprintf("Deposited all %s%d!", DEFAULT_CURRENCY, q))
+		sender.Location().SendFormattedText(fmt.Sprintf("Deposited all **%s%d**!", DEFAULT_CURRENCY, q), fmt.Sprintf("Deposited all <strong>%s%d</strong>!", DEFAULT_CURRENCY, q))
 		return
 	}
 	sender.Location().SendText("Not implemented.")
