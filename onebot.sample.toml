@@ -8,7 +8,7 @@ plugin_path = "plugins"
 plugins = ["parrot", "roll", "8ball", "tarkovbud", "money", "comics", "bashquotes"]
 
 protocol_path = "protocols"
-protocols = ["matrix"]
+protocols = ["matrix", "discord"]
 
 [database]
 engine = "leveldb" # valid values are 'leveldb' or 'mongodb'
@@ -24,3 +24,7 @@ auth_user = ""
 auth_token = ""
 # if set, this will be used to retrieve an auth token, then the password can be omitted from this file
 auth_pass = ""
+
+[discord]
+# is set as "Bot auth_token"
+auth_token = ""

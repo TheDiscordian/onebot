@@ -396,9 +396,9 @@ func checkBal(msg onelib.Message, sender onelib.Sender) {
 		cObj = new(onecurrency.CurrencyObject)
 	}
 	if err != nil {
-		onelib.Error.Println(err)
+		onelib.Error.Printf("(UUID: %s) %s\n", uuid, err)
 	}
-	text := fmt.Sprintf("%s's balance:\n\nOn-hand | Bank | Net\n%s%d    | **%s%d**   | **%s%d**", displayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity, DEFAULT_CURRENCY, cObj.Quantity+cObj.BankQuantity)
+	text := fmt.Sprintf("%s's balance:\n\nOn-hand | Bank | Net\n**%s%d**    | **%s%d**   | **%s%d**", displayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity, DEFAULT_CURRENCY, cObj.Quantity+cObj.BankQuantity)
 	formattedText := fmt.Sprintf("<strong>%s's balance:</strong><br /><table><tr><th> On-hand </th><th> Bank </th><th> Net </th></tr><br /><tr><th> <strong>%s%d</strong>  </th><th>  <strong>%s%d</strong>  </th><th> <strong>%s%d</strong></th></tr></table>", displayName, DEFAULT_CURRENCY, cObj.Quantity, DEFAULT_CURRENCY, cObj.BankQuantity, DEFAULT_CURRENCY, cObj.Quantity+cObj.BankQuantity)
 	sender.Location().SendFormattedText(text, formattedText)
 }

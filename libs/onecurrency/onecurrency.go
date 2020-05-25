@@ -178,9 +178,7 @@ func (cs *currencyStore) Get(currency string, location, uuid onelib.UUID) (ruuid
 			return
 		} else if errTxt == "user object is nil" { // okay, we don't have a user object, those are small so we'll just load a temporary object, if possible.
 			uObj := cs.loadUser(uuid)
-			if uObj != nil {
-				ruuid, tcObj, err = cs.__get(currency, location, uuid, uObj)
-			}
+			ruuid, tcObj, err = cs.__get(currency, location, uuid, uObj)
 		}
 	}
 	if tcObj != nil {
