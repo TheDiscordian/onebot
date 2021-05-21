@@ -15,7 +15,7 @@ import (
 const DB_TABLE = "onecurrency_money"
 
 // Currency is an object used for accessing currency objects managed by onecurrency.
-// TODO a "GetAll(currency string) []*CurrencyObject" feature. Returns sorted list of Quantity+BankQuantity descending. Useful for leaderboards, mass bonuses.
+
 var Currency *currencyStore
 
 type currencyStore struct {
@@ -104,31 +104,6 @@ func (cs *currencyStore) _get(currency string, location, uuid onelib.UUID) (ruui
 		err = errors.New("location object is nil")
 		return
 	}
-	uObj := cs.userMap[ruuid]
-	if uObj == nil {
-		err = errors.New("user object is nil")
-		return
-	}
-
-	if alias, _ := onelib.Alias.Get(ruuid); alias != "" {
-		onelib.Debug.Println("Alias not empty")
-		ruuid = alias
-	}
-	cObj = lObj.Currency[currency][ruuid]
-	if cObj == nil {
-		err = fmt.Errorf("user %s doesn't have that currency", ruuid)
-	}
-	return
-}
-
-// same as _get, but it expects the UserObject for the uuid as well
-func (cs *currencyStore) __get(currency string, location, uuid onelib.UUID, uObj *UserObject) (ruuid onelib.UUID, cObj *CurrencyObject, err error) {
-	ruuid = uuid
-	lObj := cs.locationMap[location]
-	if lObj == nil {
-		err = errors.New("location object is nil")
-		return
-	}
 
 	if alias, _ := onelib.Alias.Get(ruuid); alias != "" {
 		onelib.Debug.Println("Alias not empty")
@@ -176,9 +151,6 @@ func (cs *currencyStore) Get(currency string, location, uuid onelib.UUID) (ruuid
 			}
 			cs.lock.Unlock()
 			return
-		} else if errTxt == "user object is nil" { // okay, we don't have a user object, those are small so we'll just load a temporary object, if possible.
-			uObj := cs.loadUser(uuid)
-			ruuid, tcObj, err = cs.__get(currency, location, uuid, uObj)
 		}
 	}
 	if tcObj != nil {

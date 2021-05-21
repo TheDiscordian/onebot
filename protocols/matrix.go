@@ -154,15 +154,18 @@ func Load() onelib.Protocol {
 			mc := &matrixClient{Client: client}
 			ml := &matrixLocation{Client: mc, uuid: onelib.UUID(ev.RoomID)}
 			var displayName string
-			if matrix.knownMembers.Get(onelib.UUID(ev.Sender)) == nil {
+			tuser := matrix.knownMembers.Get(onelib.UUID(ev.Sender))
+			if tuser == nil {
 				resp, err := client.GetDisplayName(ev.Sender)
 				if err != nil {
+					onelib.Debug.Println("Error getting display name:", err)
 					displayName = ev.Sender
+				} else {
+					displayName = resp.DisplayName
 				}
-				displayName = resp.DisplayName
-				matrix.knownMembers.Set(onelib.UUID(ev.Sender), &member{displayName: resp.DisplayName})
+				matrix.knownMembers.Set(onelib.UUID(ev.Sender), &member{displayName: displayName})
 			} else {
-				displayName = matrix.knownMembers.Get(onelib.UUID(ev.Sender)).displayName
+				displayName = tuser.displayName
 			}
 			sender := &matrixSender{uuid: onelib.UUID(ev.Sender), username: ev.Sender, displayName: displayName, location: ml}
 			matrix.recv(onelib.Message(msg), onelib.Sender(sender))
