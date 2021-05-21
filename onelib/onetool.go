@@ -125,10 +125,10 @@ func ProcessMessage(prefix string, msg Message, sender Sender) {
 	mons := Monitors.Get()
 	for _, mon := range mons {
 		if mon.OnMessage != nil {
-			mon.OnMessage(sender, msg)
+			go mon.OnMessage(sender, msg)
 		}
 		if len(text) > 0 && mon.OnMessageWithText != nil {
-			mon.OnMessageWithText(sender, msg)
+			go mon.OnMessageWithText(sender, msg)
 		}
 		/* FIXME how do we tell what's an update ?
 		 * if mon.OnMessageUpdate != nil {
