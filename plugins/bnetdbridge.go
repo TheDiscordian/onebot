@@ -23,6 +23,8 @@ const (
 var (
 	bnetdChannel string // channel to bridge
 	bnetdDest    string // json `[{"protocol":"matrix","channel":"!example:matrix.thedisco.zone"}]`
+
+	monitor *onelib.Monitor
 )
 
 func loadConfig() {
@@ -88,23 +90,14 @@ func (bnb *BNetdBridge) OnMessageWithText(from onelib.Sender, msg onelib.Message
 
 // Implements returns a map of commands and monitor the plugin implements.
 func (bnb *BNetdBridge) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	/*
-		type Monitor struct {
-			OnMessage         func(from Sender, msg Message)    // Called on every new message
-			OnMessageWithText func(from Sender, msg Message)    // Called on every new message containing text
-			OnMessageUpdate   func(from Sender, update Message) // Called on message update (IE: edit, reaction)
-		}
-	*/
-	mon := &onelib.Monitor{
+	monitor = &onelib.Monitor{
 		OnMessageWithText: bnb.OnMessageWithText,
 		OnMessageUpdate:   bnb.OnMessageWithText,
 	}
-	return nil, mon
+	return nil, monitor
 }
 
 // Remove is called when the plugin is about to be terminated.
 func (bnb *BNetdBridge) Remove() {
-	/*
-	   Unload code goes here (if any)
-	*/
+	onelib.Monitors.Delete(monitor)
 }
