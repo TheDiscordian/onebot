@@ -19,23 +19,14 @@ const (
 )
 
 var (
-	// discordAuthUser
+	// discordAuthUser FIXME set this somewhere so we can filter out messages from ourselves (see: recv)
 	discordAuthUser string
 	// discordAuthToken if blank, falls back onto pass
 	discordAuthToken string
-	// discordAuthPass
-	discordAuthPass string
 )
 
 func loadConfig() {
 	discordAuthToken = onelib.GetTextConfig(NAME, "auth_token")
-}
-
-type discordProtocolMessage struct {
-	Format        string `json:"format"`
-	Msgtype       string `json:"msgtype"`
-	Body          string `json:"body"`
-	FormattedBody string `json:"formatted_body"`
 }
 
 // Load connects to Discord, and sets up listeners. It's required for OneBot.
@@ -151,9 +142,9 @@ func (ms *discordSender) SendFormattedText(text, formattedText string) {
 }
 
 type discordLocation struct {
-	Client                                 *discordClient // pointer to originating client
-	displayName, nickname, topic, protocol string
-	uuid                                   onelib.UUID
+	Client                       *discordClient // pointer to originating client
+	displayName, nickname, topic string
+	uuid                         onelib.UUID
 }
 
 func (ml *discordLocation) DisplayName() string {

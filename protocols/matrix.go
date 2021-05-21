@@ -270,9 +270,9 @@ func (ms *matrixSender) SendFormattedText(text, formattedText string) {
 }
 
 type matrixLocation struct {
-	Client                                 *matrixClient // pointer to originating client
-	displayName, nickname, topic, protocol string
-	uuid                                   onelib.UUID
+	Client                       *matrixClient // pointer to originating client
+	displayName, nickname, topic string
+	uuid                         onelib.UUID
 }
 
 func (ml *matrixLocation) DisplayName() string {

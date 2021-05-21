@@ -7,6 +7,7 @@ import (
 	"github.com/TheDiscordian/onebot/libs/onecurrency"
 	"github.com/TheDiscordian/onebot/onelib"
 	"math/rand"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -54,14 +55,12 @@ func (acm *aliasConfirmMap) Set(requester, target onelib.UUID) {
 	acm.lock.Lock()
 	acm.uMap[requester] = target
 	acm.lock.Unlock()
-	return
 }
 
 func (acm *aliasConfirmMap) Delete(requester onelib.UUID) {
 	acm.lock.Lock()
 	delete(acm.uMap, requester)
 	acm.lock.Unlock()
-	return
 }
 
 var (
@@ -311,12 +310,12 @@ func confirmalias(msg onelib.Message, sender onelib.Sender) {
 	}
 	alias := AliasConfirmMap.Get(onelib.UUID(text))
 	if alias == onelib.UUID("") {
-		txt := fmt.Sprintf("That account isn't trying to alias with anyone.")
+		txt := "That account isn't trying to alias with anyone."
 		sender.Location().SendText(txt)
 		return
 	}
 	if alias != sender.UUID() {
-		txt := fmt.Sprintf("That account isn't trying to alias with you.")
+		txt := "That account isn't trying to alias with you."
 		sender.Location().SendText(txt)
 		return
 	}
@@ -408,18 +407,48 @@ func deposit(msg onelib.Message, sender onelib.Sender) {
 	if text == "all" {
 		q, err := onecurrency.Currency.DepositAll(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID())
 		if err != nil {
-			sender.Location().SendText(fmt.Sprintf("Nothing to deposit!"))
+			sender.Location().SendText("Nothing to deposit!")
 			return
 		}
 		sender.Location().SendFormattedText(fmt.Sprintf("Deposited all **%s%d**!", DEFAULT_CURRENCY, q), fmt.Sprintf("Deposited all <strong>%s%d</strong>!", DEFAULT_CURRENCY, q))
 		return
 	}
-	sender.Location().SendText("Not implemented.")
+	q, err := strconv.Atoi(text)
+	if err != nil {
+		sender.Location().SendText("Quantity must be an integer.")
+		return
+	}
+	err = onecurrency.Currency.Deposit(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), q)
+	if err != nil {
+		sender.Location().SendText(err.Error())
+		return
+	}
+	sender.Location().SendFormattedText(fmt.Sprintf("Deposited **%s%d**!", DEFAULT_CURRENCY, q), fmt.Sprintf("Deposited <strong>%s%d</strong>!", DEFAULT_CURRENCY, q))
 	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
 }
 
 func withdraw(msg onelib.Message, sender onelib.Sender) {
-	sender.Location().SendText("Not implemented.")
+	text := msg.Text()
+	if text == "all" {
+		q, err := onecurrency.Currency.WithdrawAll(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID())
+		if err != nil {
+			sender.Location().SendText("Nothing to withdraw!")
+			return
+		}
+		sender.Location().SendFormattedText(fmt.Sprintf("Withdrew all **%s%d**!", DEFAULT_CURRENCY, q), fmt.Sprintf("Withdrew all <strong>%s%d</strong>!", DEFAULT_CURRENCY, q))
+		return
+	}
+	q, err := strconv.Atoi(text)
+	if err != nil {
+		sender.Location().SendText("Quantity must be an integer.")
+		return
+	}
+	err = onecurrency.Currency.Withdraw(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), q)
+	if err != nil {
+		sender.Location().SendText(err.Error())
+		return
+	}
+	sender.Location().SendFormattedText(fmt.Sprintf("Withdrew **%s%d**!", DEFAULT_CURRENCY, q), fmt.Sprintf("Withdrew <strong>%s%d</strong>!", DEFAULT_CURRENCY, q))
 	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
 }
 

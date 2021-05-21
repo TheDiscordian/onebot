@@ -238,7 +238,6 @@ func (ms *MonitorSlice) Delete(monitor *Monitor) {
 	for i, mon := range ms.monitors {
 		if mon == monitor {
 			ms.monitors = append(ms.monitors[:i], ms.monitors[i+1:]...)
-			Debug.Println("Monitor matched + removed") // FIXME Leaving this here to ensure this code accurately matches monitors
 			break
 		}
 	}

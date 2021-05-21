@@ -265,7 +265,7 @@ func (cs *currencyStore) Multiply(currency string, location, uuid onelib.UUID, q
 // respect mutex locks.
 func (cs *currencyStore) _deposit(cObj *CurrencyObject, quantity int) error {
 	if cObj.Quantity < quantity {
-		return errors.New("insufficient funds")
+		return errors.New("Insufficient funds.")
 	}
 	cObj.Quantity -= quantity
 	cObj.BankQuantity += quantity
@@ -275,7 +275,7 @@ func (cs *currencyStore) _deposit(cObj *CurrencyObject, quantity int) error {
 // Deposit attempts to do a deposit operation. Will only work if it results in Quantity being 0 or greater.
 func (cs *currencyStore) Deposit(currency string, location, uuid onelib.UUID, quantity int) error {
 	if quantity <= 0 {
-		return errors.New("quantity must be greater than 0")
+		return errors.New("Quantity must be greater than 0.")
 	}
 	cs.lock.Lock()
 	_, cObj, err := cs.fetchCurrencyObject(currency, location, uuid)
@@ -300,7 +300,7 @@ func (cs *currencyStore) DepositAll(currency string, location, uuid onelib.UUID)
 	all := cObj.Quantity
 	if all <= 0 {
 		cs.lock.Unlock()
-		return 0, errors.New("insufficient funds")
+		return 0, errors.New("Insufficient funds.")
 	}
 	err = cs._deposit(cObj, all)
 	cs.saveLocation(location)
@@ -312,7 +312,7 @@ func (cs *currencyStore) DepositAll(currency string, location, uuid onelib.UUID)
 // Doesn't respect mutex locks.
 func (cs *currencyStore) _withdraw(cObj *CurrencyObject, quantity int) error {
 	if cObj.BankQuantity < quantity {
-		return errors.New("insufficient funds")
+		return errors.New("Insufficient funds.")
 	}
 	cObj.BankQuantity -= quantity
 	cObj.Quantity += quantity
@@ -322,7 +322,7 @@ func (cs *currencyStore) _withdraw(cObj *CurrencyObject, quantity int) error {
 // Withdraw attempts to do a withdraw operation. Will only work if it results in BankQuantity being 0 or greater.
 func (cs *currencyStore) Withdraw(currency string, location, uuid onelib.UUID, quantity int) error {
 	if quantity <= 0 {
-		return errors.New("quantity must be greater than 0")
+		return errors.New("Quantity must be greater than 0.")
 	}
 	cs.lock.Lock()
 	_, cObj, err := cs.fetchCurrencyObject(currency, location, uuid)
@@ -336,7 +336,7 @@ func (cs *currencyStore) Withdraw(currency string, location, uuid onelib.UUID, q
 	return err
 }
 
-// DepositAll attempts to deposit all of BankQuantity into ,balQuantity.
+// WithdrawAll attempts to withdraw all of BankQuantity into Quantity.
 func (cs *currencyStore) WithdrawAll(currency string, location, uuid onelib.UUID) (int, error) {
 	cs.lock.Lock()
 	_, cObj, err := cs.fetchCurrencyObject(currency, location, uuid)
@@ -344,10 +344,10 @@ func (cs *currencyStore) WithdrawAll(currency string, location, uuid onelib.UUID
 		cs.lock.Unlock()
 		return 0, err
 	}
-	all := cObj.Quantity
+	all := cObj.BankQuantity
 	if all <= 0 {
 		cs.lock.Unlock()
-		return 0, errors.New("insufficient funds")
+		return 0, errors.New("Insufficient funds.")
 	}
 	err = cs._withdraw(cObj, all)
 	cs.saveLocation(location)
