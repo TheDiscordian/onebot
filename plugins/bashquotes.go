@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"github.com/TheDiscordian/onebot/onelib"
+	"html"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -79,9 +80,10 @@ func getRandomQuoteInfo() (quoteNumber int, score int, quote string) {
 
 func bashQuote(msg onelib.Message, sender onelib.Sender) {
 	quoteNumber, score, quote := getRandomQuoteInfo()
-	//text := fmt.Sprintf("Your comic: \"%s\": %s\n*%s*", title, url, extraText)
+	unformattedQuote := strings.ReplaceAll(html.UnescapeString(quote), "<br />", "")
+	text := fmt.Sprintf("Quote #%d (+%d):\n%s", quoteNumber, score, unformattedQuote)
 	formattedText := fmt.Sprintf("Quote <a href=http://bash.org/?%d>#%d</a> (<span data-mx-color=\"#00FF00\">%d</span>):<br />\n%s", quoteNumber, quoteNumber, score, quote)
-	sender.Location().SendFormattedText(formattedText, formattedText)
+	sender.Location().SendFormattedText(text, formattedText)
 }
 
 // Implements returns a map of commands and monitor the plugin implements.
