@@ -117,17 +117,23 @@ func ProcessMessage(prefix string, msg Message, sender Sender) {
 		if command := Commands.Get(commandName); command != nil {
 			// Call command as goroutine, passing a copy of the message without the command call
 			go command(msg.StripPrefix(prefix+commandName), sender)
+
+			return // TODO once command outputs are bridged, this line needs to be removed so the bridge can still bridge the call itself
 		}
 	}
 
-	// TODO process monitors better
-	if len(text) > 0 {
-		mons := Monitors.Get()
-		Debug.Println(mons)
-		for _, mon := range mons {
-			if mon.OnMessageWithText != nil {
-				mon.OnMessageWithText(sender, msg)
-			}
+	mons := Monitors.Get()
+	for _, mon := range mons {
+		if mon.OnMessage != nil {
+			mon.OnMessage(sender, msg)
 		}
+		if len(text) > 0 && mon.OnMessageWithText != nil {
+			mon.OnMessageWithText(sender, msg)
+		}
+		/* FIXME how do we tell what's an update ?
+		 * if mon.OnMessageUpdate != nil {
+			mon.OnMessageUpdate(sender, msg)
+		}*/
 	}
+
 }
