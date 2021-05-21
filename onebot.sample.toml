@@ -31,7 +31,7 @@ auth_token = ""
 
 [irc_bnetd]
 # the username of the account on the PvPGN server to login as
-nick = ""
+nick = "OneBot"
 # password for above username
 pass = ""
 # bnetd instance with ircd enabled
