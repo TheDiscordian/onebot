@@ -28,3 +28,13 @@ auth_pass = ""
 [discord]
 # is set as "Bot auth_token"
 auth_token = ""
+
+[irc_bnetd]
+# the username of the account on the PvPGN server to login as
+nick = ""
+# password for above username
+pass = ""
+# bnetd instance with ircd enabled
+server = "localhost:6667"
+# channels to autojoin after connection (comma separated)
+auto_join = "#Diablo_II-1"
