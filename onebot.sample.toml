@@ -38,3 +38,9 @@ pass = ""
 server = "localhost:6667"
 # channels to autojoin after connection (comma separated)
 auto_join = "#Diablo_II-1"
+
+[bnetdbridge]
+# bnetd irc channel to watch
+channel = "#Diablo_II-1"
+# json array of rooms to bridge with bnetd
+dest = '[{"protocol":"matrix","channel":"!example:matrix.org"}]'

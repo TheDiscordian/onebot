@@ -85,9 +85,7 @@ func handleConnection(c *BnetProtocol) {
 					}
 				}
 			} else if splitMsg[1] == "PRIVMSG" {
-				onelib.Debug.Println("GOT MSG")
 				splitMsg[3] = splitMsg[3][1:]
-				onelib.Debug.Println(strings.Join(splitMsg[3:], " "))
 				msg := &bnetMessage{text: strings.Join(splitMsg[3:], " ")}
 				loc := &bnetLocation{displayName: splitMsg[2], uuid: onelib.UUID(splitMsg[2])}
 				splitMsg[0] = splitMsg[0][1:]
@@ -95,7 +93,7 @@ func handleConnection(c *BnetProtocol) {
 				sender := &bnetSender{displayName: senderNick, location: loc, uuid: onelib.UUID(splitMsg[0])}
 				c.recv(msg, sender)
 			}
-			onelib.Debug.Println("[bnet]", msgStr)
+			//onelib.Debug.Println("[bnet]", msgStr)
 		}
 	}
 }

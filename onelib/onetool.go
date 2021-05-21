@@ -23,9 +23,13 @@ func LoadPlugin(name string) error {
 	plug := loadF.(func() Plugin)()
 	Plugins.Put(name, plug)
 
-	commands, _ := plug.Implements()
+	commands, mon := plug.Implements()
 	for trigger, command := range commands {
 		Commands.Put(trigger, command)
+	}
+	// TODO unload
+	if mon != nil {
+		Monitors.Put(mon)
 	}
 
 	Info.Printf("Loaded '%s' version %s.\n", plug.LongName(), plug.Version())
@@ -116,5 +120,14 @@ func ProcessMessage(prefix string, msg Message, sender Sender) {
 		}
 	}
 
-	// TODO process monitors
+	// TODO process monitors better
+	if len(text) > 0 {
+		mons := Monitors.Get()
+		Debug.Println(mons)
+		for _, mon := range mons {
+			if mon.OnMessageWithText != nil {
+				mon.OnMessageWithText(sender, msg)
+			}
+		}
+	}
 }
