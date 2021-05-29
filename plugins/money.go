@@ -368,7 +368,7 @@ func checkBal(msg onelib.Message, sender onelib.Sender) {
 		displayName = sender.DisplayName()
 		onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), uuid, displayName)
 	} else {
-		displayName = text[:len(text)-1]
+		displayName = text[:len(text)]
 		if sender.Protocol() == "matrix" {
 			formattedText := msg.FormattedText()
 			if len(formattedText) > 29 && string(formattedText[:29]) == "<a href=\"https://matrix.to/#/" {
@@ -377,7 +377,7 @@ func checkBal(msg onelib.Message, sender onelib.Sender) {
 					uuid = onelib.UUID(tuuid[:end])
 				}
 			} else {
-				uuid = onelib.UUID("")
+				uuid = onelib.UUID(displayName)
 			}
 		} else {
 			uuid = onelib.UUID(displayName)
