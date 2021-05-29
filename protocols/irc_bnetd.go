@@ -87,9 +87,14 @@ func handleConnection(c *BnetProtocol) {
 			} else if splitMsg[1] == "PRIVMSG" {
 				splitMsg[3] = splitMsg[3][1:]
 				msg := &bnetMessage{text: strings.Join(splitMsg[3:], " ")}
-				loc := &bnetLocation{displayName: splitMsg[2], uuid: onelib.UUID(splitMsg[2])}
 				splitMsg[0] = splitMsg[0][1:]
 				senderNick := strings.Split(splitMsg[0], "!")[0]
+				var loc *bnetLocation
+				if splitMsg[2] != bnetNick {
+					loc = &bnetLocation{displayName: splitMsg[2], uuid: onelib.UUID(splitMsg[2])}
+				} else {
+					loc = &bnetLocation{displayName: senderNick, uuid: onelib.UUID(senderNick)} // using NICK so responses get through correctly...
+				}
 				sender := &bnetSender{displayName: senderNick, location: loc, uuid: onelib.UUID(splitMsg[0])}
 				c.recv(msg, sender)
 			}
