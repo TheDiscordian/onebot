@@ -119,7 +119,6 @@ var (
 		"The yolk of an egg and its germinal disc is a single cell",
 		"Lonesome George is the name of the last known remaining Pinta Island Tortoise",
 		"Venison is deer meat",
-		"A 'Two-Spirit' is a transgender person who identifies as having both a male and a female gender",
 		"The 'Parmigiano-Reggiano' name for cheese is a trademarked in Europe",
 		"After water and tea, beer is the third most popular drink worldwide",
 		"Maple syrup is sap from the maple tree",
