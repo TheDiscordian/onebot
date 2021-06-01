@@ -85,8 +85,8 @@ func getComicInfo(url string) (title string, imageURL string, extraText string) 
 }
 
 func comic(msg onelib.Message, sender onelib.Sender) {
-	min := 200
-	max := 2307 //TODO give link to main page for newest updates
+	min := 100
+	max := 2470 //TODO give link to main page for newest updates
 	url := fmt.Sprintf("https://www.xkcd.com/%d", rand.Intn(max-min+1)+min)
 	title, imageURL, extraText := getComicInfo(url)
 	text := fmt.Sprintf("Your comic: \"%s\": %s\n*%s*", title, url, extraText)
