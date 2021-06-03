@@ -33,9 +33,9 @@ func Load() onelib.Plugin {
 
 func createTable(title string, chars []*CharInfo) (text, formattedText string) {
 	text = fmt.Sprintf("Diablo II %s Ladder:\n", title)
-	formattedText = fmt.Sprintf("<strong>Diablo II %s Ladder:</strong><br /><table><tr><th> # </th><th> Name </th><th> Level </th><th> XP </th><th> Acts Completed </th></tr><br />", title)
+	formattedText = fmt.Sprintf("<strong>Diablo II %s Ladder:</strong><br /><table><tr><th> # </th><th> Name </th><th> Level </th><th> XP </th></tr><br />", title)
 	for i, char := range chars { // getTitle(c Class, expansion bool, difficulty int, hardcore bool)
-		text += fmt.Sprintf("    %d. %s [%d] (%dxp 🞄 %d acts)\n", i+1, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, char.Level, char.Experience, char.ActsCompleted)
+		text += fmt.Sprintf("    %d. %s [%d] (%dxp)\n", i+1, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, char.Level, char.Experience)
 		var highlight, highlightCloser string
 		switch i {
 		case 0:
@@ -48,7 +48,7 @@ func createTable(title string, chars []*CharInfo) (text, formattedText string) {
 			highlight = `<font color="#6A3805">`
 			highlightCloser = "</font>"
 		}
-		formattedText += fmt.Sprintf("<tr><td> %s%d%s  </td><th>  <strong>%s%s%s</strong>  </th><td> %d  </td><td> %d  </td><td> %d</td></tr>", highlight, i+1, highlightCloser, highlight, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, highlightCloser, char.Level, char.Experience, char.ActsCompleted)
+		formattedText += fmt.Sprintf("<tr><td> %s%d%s  </td><th>  <strong>%s%s%s</strong>  </th><td> %d  </td><td> %d</td></tr>", highlight, i+1, highlightCloser, highlight, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, highlightCloser, char.Level, char.Experience)
 		if i <= 2 {
 			formattedText += "</font>"
 		}
@@ -125,7 +125,7 @@ type LadderHeader struct {
 type CharInfo struct {
 	Experience    int    `struc:"int32,little"`
 	Status        int    `struc:"int8,little"`
-	ActsCompleted int    `struc:"int8,little"`
+	ActsCompleted int    `struc:"int8,little"` // this doesn't seem to update after completing act IV : /
 	Level         int    `struc:"int8,little"`
 	Class         Class  `struc:"int8,little"`
 	CharName      string `struc:"[16]int8,little"`
