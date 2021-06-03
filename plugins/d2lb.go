@@ -33,9 +33,9 @@ func Load() onelib.Plugin {
 
 func createTable(title string, chars []*CharInfo) (text, formattedText string) {
 	text = fmt.Sprintf("Diablo II %s Ladder:\n", title)
-	formattedText = fmt.Sprintf("<strong>Diablo II %s Ladder:</strong><br /><table><tr><th> # </th><th> Name </th><th> Level </th><th> XP </th></tr><br />", title)
+	formattedText = fmt.Sprintf("<strong>Diablo II %s Ladder:</strong><br /><table><tr><th> # </th><th> Name </th><th> Class </th><th> Level </th><th> XP </th></tr><br />", title)
 	for i, char := range chars { // getTitle(c Class, expansion bool, difficulty int, hardcore bool)
-		text += fmt.Sprintf("    %d. %s [%d] (%dxp)\n", i+1, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, char.Level, char.Experience)
+		text += fmt.Sprintf("    %d. %s [%s] Lvl.%d (%dxp)\n", i+1, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, classToString(char.Class), char.Level, char.Experience)
 		var highlight, highlightCloser string
 		switch i {
 		case 0:
@@ -48,7 +48,7 @@ func createTable(title string, chars []*CharInfo) (text, formattedText string) {
 			highlight = `<font color="#6A3805">`
 			highlightCloser = "</font>"
 		}
-		formattedText += fmt.Sprintf("<tr><td> %s%d%s  </td><th>  <strong>%s%s%s</strong>  </th><td> %d  </td><td> %d</td></tr>", highlight, i+1, highlightCloser, highlight, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, highlightCloser, char.Level, char.Experience)
+		formattedText += fmt.Sprintf("<tr><td> %s%d%s  </td><th>  <strong>%s%s%s</strong>  </th><td> %s  </td><td> %d  </td><td> %d</td></tr>", highlight, i+1, highlightCloser, highlight, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, highlightCloser, classToString(char.Class), char.Level, char.Experience)
 		if i <= 2 {
 			formattedText += "</font>"
 		}
@@ -164,19 +164,19 @@ const (
 func classToString(c Class) string {
 	switch c {
 	case Amazon:
-		return "Amazon"
+		return "ama"
 	case Sorceress:
-		return "Sorceress"
+		return "sor"
 	case Necromancer:
-		return "Necromancer"
+		return "nec"
 	case Paladin:
-		return "Paladin"
+		return "pal"
 	case Barbarian:
-		return "Barbarian"
+		return "bar"
 	case Druid:
-		return "Druid"
+		return "dru"
 	case Assassin:
-		return "Assasin"
+		return "asn"
 	}
 	return ""
 }
