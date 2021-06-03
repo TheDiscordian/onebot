@@ -39,8 +39,16 @@ server = "localhost:6667"
 # channels to autojoin after connection (comma separated)
 auto_join = "#Diablo_II-1"
 
+#
+# Disabled by default plugins
+#
+
 [bnetdbridge]
 # bnetd irc channel to watch
 channel = "#Diablo_II-1"
 # json array of rooms to bridge with bnetd
 dest = '[{"protocol":"matrix","channel":"!example:matrix.org"}]'
+
+[d2lb]
+# path to ladder.D2DV
+ladder_path = "/usr/local/var/pvpgn/ladders/ladder.D2DV"
