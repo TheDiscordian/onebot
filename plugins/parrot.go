@@ -71,7 +71,7 @@ func (pp *ParrotPlugin) Version() string {
 func (pp *ParrotPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
 	var splitMsg []string
 	txt := msg.Text()
-	if strings.HasPrefix(txt, "s/") {
+	if strings.HasPrefix(txt, "s/") || strings.HasPrefix(txt, " s/") {
 		splitMsg = strings.Split(txt, "/")
 		if len(splitMsg) < 2 {
 			return
