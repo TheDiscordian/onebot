@@ -3,6 +3,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/TheDiscordian/onebot/onelib"
 )
 
@@ -17,7 +19,12 @@ const (
 
 // Load returns the Plugin object.
 func Load() onelib.Plugin {
-	return new(ParrotPlugin)
+	pp := new(ParrotPlugin)
+	pp.msgs = make(map[onelib.UUID]string, 1)
+	pp.monitor = &onelib.Monitor{
+		OnMessageWithText: pp.OnMessageWithText,
+	}
+	return pp
 }
 
 func reverse(s string) string {
@@ -41,7 +48,10 @@ func formatParrot(msg onelib.Message, sender onelib.Sender) {
 }
 
 // ParrotPlugin is an object for satisfying the Plugin interface.
-type ParrotPlugin int
+type ParrotPlugin struct {
+	monitor *onelib.Monitor
+	msgs    map[onelib.UUID]string
+}
 
 // Name returns the name of the plugin, usually the filename.
 func (pp *ParrotPlugin) Name() string {
@@ -58,9 +68,26 @@ func (pp *ParrotPlugin) Version() string {
 	return VERSION
 }
 
+func (pp *ParrotPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
+	var splitMsg []string
+	txt := msg.Text()
+	if strings.HasPrefix(txt, "s/") {
+		splitMsg = strings.Split(txt, "/")
+		if len(splitMsg) < 2 {
+			return
+		}
+	} else {
+		pp.msgs[from.Location().UUID()] = msg.FormattedText()
+		return
+	}
+	loc := from.Location()
+	outMsg := strings.ReplaceAll(pp.msgs[loc.UUID()], splitMsg[1], splitMsg[2])
+	loc.SendFormattedText(outMsg, outMsg)
+}
+
 // Implements returns a map of commands and monitor the plugin implements.
 func (pp *ParrotPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"say": parrot, "s": parrot, "r": revParrot, "rev": revParrot, "format": formatParrot, "form": formatParrot}, nil
+	return map[string]onelib.Command{"say": parrot, "s": parrot, "r": revParrot, "rev": revParrot, "format": formatParrot, "form": formatParrot}, pp.monitor
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.
