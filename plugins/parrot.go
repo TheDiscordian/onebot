@@ -77,12 +77,12 @@ func (pp *ParrotPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message
 			return
 		}
 	} else {
-		pp.msgs[from.Location().UUID()] = msg.FormattedText()
+		pp.msgs[from.Location().UUID()] = txt
 		return
 	}
 	loc := from.Location()
 	outMsg := strings.ReplaceAll(pp.msgs[loc.UUID()], splitMsg[1], splitMsg[2])
-	loc.SendFormattedText(outMsg, outMsg)
+	loc.SendText(outMsg)
 }
 
 // Implements returns a map of commands and monitor the plugin implements.
