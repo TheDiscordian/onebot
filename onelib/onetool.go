@@ -47,7 +47,7 @@ func LoadPlugins() {
 }
 
 // UnloadPlugin removes a plugin from the active plugins map, returning an error if not loaded, calling the related
-// Delete methods.
+// delete methods.
 func UnloadPlugin(name string) error {
 	plug := Plugins.Get(name)
 	if plug == nil {

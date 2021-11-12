@@ -286,6 +286,34 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
 }
 
+func risk(msg onelib.Message, sender onelib.Sender) {
+	const (
+		riskMax     = 499
+		riskMin     = 100
+		riskFineMax = 500
+		riskFineMin = 101
+		riskFail    = 2                // 1 in x of failure
+		riskTime    = time.Second * 61 // time until command can be called again
+	)
+	riskResponses := [][2]string{
+		{"You bet your life savings on a horse race ... and win **%s%d**!", "You bet your life savings on a horse race ... and win <strong>%s%d</strong>!"},
+		{"You buy a lottery ticket and win **%s%d**!", "You buy a lottery ticket and win <strong>%s%d</strong>!"},
+		{"You drive as fast as your vehicle will go, and time is money, so you gain **%s%d**!", "You drive as fast as your vehicle will go, and time is money, so you gain <strong>%s%d</strong>!"},
+		{"You sacrifice to the gambling gods, they smile upon you, and bless you with **%s%d**!", "You sacrifice to the gambling gods, they smile upon you, and bless you with <strong>%s%d</strong>!"},
+	}
+	riskNegativeResponses := [][2]string{
+		{"You dangle your child off a roof! That was a bad idea, you lose **%s%d**...", "You dangle your child off a roof! That was a bad idea, you lose <strong>%s%d</strong>..."},
+		{"You bet your life savings on a horse race ... and lose **%s%d** 😞", "You bet your life savings on a horse race ... and lose <strong>%s%d</strong> 😞"},
+		{"You buy several lottery tickets and have a total net loss of **%s%d** 😞", "You buy several lottery tickets and have a total net loss of <strong>%s%d</strong> 😞"},
+		{"You get caught speeding and pay a fine of **%s%d**.", "You get caught speeding and pay a fine of <strong>%s%d</strong>."},
+		{"You have to pay interest to your loanshark, you pay **%s%d**.", "You have to pay interest to your loanshark, you pay <strong>%s%d</strong>."},
+		{"You sacrifice to the gambling gods and lose **%s%d**.", "You sacrifice to the gambling gods and lose  <strong>%s%d</strong>."},
+	}
+	text, formattedText := performAction(sender.UUID(), "risk", "risk", riskMin, riskMax, riskFineMin, riskFineMax, riskFail, riskResponses, riskNegativeResponses, riskTime)
+	sender.Location().SendFormattedText(text, formattedText)
+	onecurrency.Currency.UpdateDisplayName(DEFAULT_CURRENCY, onelib.UUID("global"), sender.UUID(), sender.DisplayName())
+}
+
 func alias(msg onelib.Message, sender onelib.Sender) {
 	text := strings.ReplaceAll(msg.Text(), "`", "")
 	if text == "" {
@@ -472,7 +500,7 @@ func (mp *MoneyPlugin) Version() string {
 
 // Implements returns a map of commands and monitor the plugin implements.
 func (mp *MoneyPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"bal": checkBal, "balance": checkBal, "cute": cute, "chill": chill, "meme": meme, "dep": deposit, "deposit": deposit, "withdraw": withdraw, "alias": alias, "unalias": unalias, "confirmalias": confirmalias, "leaderboard": leaderboard, "lb": leaderboard}, nil
+	return map[string]onelib.Command{"bal": checkBal, "balance": checkBal, "cute": cute, "chill": chill, "meme": meme, "risk": risk, "dep": deposit, "deposit": deposit, "withdraw": withdraw, "alias": alias, "unalias": unalias, "confirmalias": confirmalias, "leaderboard": leaderboard, "lb": leaderboard}, nil
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.
