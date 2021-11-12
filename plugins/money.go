@@ -289,9 +289,9 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 func risk(msg onelib.Message, sender onelib.Sender) {
 	const (
 		riskMax     = 499
-		riskMin     = 100
+		riskMin     = 80
 		riskFineMax = 500
-		riskFineMin = 101
+		riskFineMin = 81
 		riskFail    = 2                // 1 in x of failure
 		riskTime    = time.Second * 61 // time until command can be called again
 	)
@@ -307,7 +307,7 @@ func risk(msg onelib.Message, sender onelib.Sender) {
 		{"You buy several lottery tickets and have a total net loss of **%s%d** 😞", "You buy several lottery tickets and have a total net loss of <strong>%s%d</strong> 😞"},
 		{"You get caught speeding and pay a fine of **%s%d**.", "You get caught speeding and pay a fine of <strong>%s%d</strong>."},
 		{"You have to pay interest to your loanshark, you pay **%s%d**.", "You have to pay interest to your loanshark, you pay <strong>%s%d</strong>."},
-		{"You sacrifice to the gambling gods and lose **%s%d**.", "You sacrifice to the gambling gods and lose  <strong>%s%d</strong>."},
+		{"You sacrifice to the gambling gods and lose **%s%d**.", "You sacrifice to the gambling gods and lose <strong>%s%d</strong>."},
 	}
 	text, formattedText := performAction(sender.UUID(), "risk", "risk", riskMin, riskMax, riskFineMin, riskFineMax, riskFail, riskResponses, riskNegativeResponses, riskTime)
 	sender.Location().SendFormattedText(text, formattedText)
