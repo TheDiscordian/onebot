@@ -130,10 +130,16 @@ func ProcessMessage(prefix string, msg Message, sender Sender) {
 		if len(text) > 0 && mon.OnMessageWithText != nil {
 			go mon.OnMessageWithText(sender, msg)
 		}
-		/* FIXME how do we tell what's an update ?
-		 * if mon.OnMessageUpdate != nil {
-			mon.OnMessageUpdate(sender, msg)
-		}*/
 	}
 
+}
+
+// ProcessUpdate processes monitor trigger "mon.OnMessageUpdate"
+func ProcessUpdate(msg Message, sender Sender) {
+	mons := Monitors.Get()
+	for _, mon := range mons {
+		if mon.OnMessageUpdate != nil {
+			mon.OnMessageUpdate(sender, msg)
+		}
+	}
 }

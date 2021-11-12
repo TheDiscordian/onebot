@@ -45,17 +45,20 @@ func Load() onelib.Protocol {
 
 	client.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) { // OnMessageCreate...
 		if m.Type == discordgo.MessageTypeDefault {
-			msg := &discordMessage{text: m.Content}
+			var (
+				displayName string
+				sender      *discordSender
+				user        *discordgo.User
+			)
+
+			msg := &discordMessage{text: m.Content, id: onelib.UUID(m.ID)}
 			dc := &discordClient{Session: client}
 			dl := &discordLocation{Client: dc, uuid: onelib.UUID(m.ChannelID)}
-			var displayName string
 			if m.Member != nil && m.Member.Nick != "" {
 				displayName = m.Member.Nick
 			} else if m.Author != nil {
 				displayName = m.Author.Username
 			}
-			var sender *discordSender
-			var user *discordgo.User
 			if m.Author != nil {
 				user = m.Author
 			} else if m.Member != nil && m.Member.User != nil {
@@ -75,13 +78,49 @@ func Load() onelib.Protocol {
 		}
 	})
 
+	client.AddHandler(func(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+		if m.Emoji.ID == "" {
+			m.Emoji.ID = m.Emoji.Name
+		}
+
+		msg := &discordMessage{id: onelib.UUID(m.MessageID), emoji: &onelib.Emoji{Added: true, ID: onelib.UUID(m.Emoji.ID), Name: m.Emoji.Name}}
+		dc := &discordClient{Session: client}
+		dl := &discordLocation{Client: dc, uuid: onelib.UUID(m.ChannelID)}
+		sender := &discordSender{uuid: onelib.UUID(m.UserID), location: dl}
+
+		discordSession.update(msg, sender)
+	})
+
+	client.AddHandler(func(s *discordgo.Session, m *discordgo.MessageReactionRemove) {
+		if m.Emoji.ID == "" {
+			m.Emoji.ID = m.Emoji.Name
+		}
+
+		msg := &discordMessage{id: onelib.UUID(m.MessageID), emoji: &onelib.Emoji{Added: false, ID: onelib.UUID(m.Emoji.ID), Name: m.Emoji.Name}}
+		dc := &discordClient{Session: client}
+		dl := &discordLocation{Client: dc, uuid: onelib.UUID(m.ChannelID)}
+		sender := &discordSender{uuid: onelib.UUID(m.UserID), location: dl}
+
+		discordSession.update(msg, sender)
+	})
+
 	discordSession.client.Open()
 
 	return onelib.Protocol(discordSession)
 }
 
 type discordMessage struct {
+	id                  onelib.UUID
 	formattedText, text string
+	emoji               *onelib.Emoji
+}
+
+func (mm *discordMessage) UUID() onelib.UUID {
+	return mm.id
+}
+
+func (mm *discordMessage) Reaction() *onelib.Emoji {
+	return mm.emoji
 }
 
 func (mm *discordMessage) Text() string {
@@ -254,6 +293,13 @@ func (discord *Discord) SendFormattedText(to onelib.UUID, text, formattedText st
 func (discord *Discord) recv(msg onelib.Message, sender onelib.Sender) {
 	if string(sender.UUID()) != discordAuthUser {
 		onelib.ProcessMessage(discord.prefix, msg, sender)
+	}
+}
+
+// update should be called after you've recieved an edit or reaction
+func (discord *Discord) update(msg onelib.Message, sender onelib.Sender) {
+	if string(sender.UUID()) != discordAuthUser {
+		onelib.ProcessUpdate(msg, sender)
 	}
 }
 

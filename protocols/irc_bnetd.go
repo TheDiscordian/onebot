@@ -162,6 +162,16 @@ type bnetMessage struct {
 	text string
 }
 
+func (bm *bnetMessage) UUID() onelib.UUID {
+	onelib.Debug.Printf("[%s] Message UUIDs not supported.\n", NAME)
+	return onelib.UUID("")
+}
+
+func (bm *bnetMessage) Reaction() *onelib.Emoji {
+	onelib.Debug.Printf("[%s] Reactions not supported.\n", NAME)
+	return nil
+}
+
 func (bm *bnetMessage) Text() string {
 	return bm.text
 }

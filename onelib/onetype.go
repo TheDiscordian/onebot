@@ -281,11 +281,20 @@ type Location interface {
 
 // Message contains information either being sent or received
 type Message interface {
-	Text() string          // The unformatted text being received (minus the trigger for commands)
-	FormattedText() string // the formatted text being received (minus trigger for commands)
-	// Reactions() []Reaction // TODO The reactions on the message
+	Text() string                      // The unformatted text being received (minus the trigger for commands)
+	FormattedText() string             // the formatted text being received (minus trigger for commands)
 	StripPrefix(prefix string) Message // Returns a copy of the message with `prefix + commandName + " "` stripped (Ex: "!say Hello" becomes "Hello")
 	Raw() []byte                       // The raw data received
+	UUID() UUID                        // Unique identifier for the message (can be empty)
+	Reaction() *Emoji                  // Returns an emoji that was either added or removed, or nil if none
+	// Reactions() []Reaction // TODO The reactions on the message
+}
+
+// Emoji contains data which should be useful around emojis.
+type Emoji struct {
+	ID    UUID   // The UUID of the emoji, should never be blank.
+	Name  string // Either a unicode representation of the emoji, or a name.
+	Added bool   // If true, the emoji was just added as a reaction. If false, it was just removed. Ignore field on reaction lists (See Message.Reactions()).
 }
 
 // Sender contains information about who and where a message came from
@@ -293,7 +302,7 @@ type Sender interface {
 	DisplayName() string // Display name of the sender
 	Username() string    // Username of the sender (often unknown, should return an empty string if so)
 	UUID() UUID          // Unique identifier for the sender
-	// Picture // TODO The avatar of the location
+	// Picture // TODO The avatar of the sender
 	Location() Location                           // The location where this sender sent the message from
 	Protocol() string                             // Returns the protocol name responsible for the sender
 	Send(msg Message)                             // Sends a Message to the sender

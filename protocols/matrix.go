@@ -212,6 +212,16 @@ type matrixMessage struct {
 	formattedText, text string
 }
 
+func (mm *matrixMessage) UUID() onelib.UUID {
+	onelib.Debug.Printf("[%s] Message UUIDs not yet supported.\n", NAME)
+	return onelib.UUID("")
+}
+
+func (mm *matrixMessage) Reaction() *onelib.Emoji {
+	onelib.Debug.Printf("[%s] Reactions not yet supported.\n", NAME)
+	return nil
+}
+
 func (mm *matrixMessage) Text() string {
 	return mm.text
 }
