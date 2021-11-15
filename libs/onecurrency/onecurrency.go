@@ -1,4 +1,4 @@
-// Copyright (c) 2020, The OneBot Contributors. All rights reserved.
+// Copyright (c) 2020-2022, The OneBot Contributors. All rights reserved.
 
 package onecurrency
 
