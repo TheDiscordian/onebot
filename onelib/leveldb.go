@@ -88,6 +88,11 @@ func (db *levelDB) PutObj(table, key string, obj interface{}) error {
 	return db.dB.Put([]byte(fmt.Sprintf("%s.%s", table, key)), data, nil)
 }
 
+// Removes an object at location "key"
+func (db *levelDB) Remove(table, key string) error {
+	return db.dB.Delete([]byte(fmt.Sprintf("%s.%s", table, key)), nil)
+}
+
 // SetIndex sets an index on field. Building an index can take a long time. On LevelDB Index *must* be unique, or will
 // overwrite.
 func (db *levelDB) SetIndex(table, field string) error {

@@ -5,6 +5,7 @@ package main
 import (
 	"strings"
 
+	"github.com/TheDiscordian/onebot/libs/discord"
 	"github.com/TheDiscordian/onebot/onelib"
 	"github.com/bwmarrin/discordgo"
 )
@@ -23,10 +24,13 @@ var (
 	discordAuthUser string
 	// discordAuthToken if blank, falls back onto pass
 	discordAuthToken string
+	// discordAdminId is the UUID of the admin of the bot. This should probably be an array
+	discordAdminId string
 )
 
 func loadConfig() {
 	discordAuthToken = onelib.GetTextConfig(NAME, "auth_token")
+	discord.DiscordAdminId = onelib.UUID(onelib.GetTextConfig(NAME, "admin_id"))
 }
 
 // Load connects to Discord, and sets up listeners. It's required for OneBot.
@@ -36,12 +40,12 @@ func Load() onelib.Protocol {
 	if discordAuthToken == "" {
 		onelib.Error.Panicln("discordAuthToken can't be blank.")
 	}
-	client, err := discordgo.New("Bot " + discordAuthToken)
+	client, err := discordgo.New("Bot " + discordAuthToken) // FIXME maybe make this a global of a "discord lib" (wrap discordgo client in our own struct, extending as needed)
 	if err != nil {
 		onelib.Error.Panicln(err)
 	}
 
-	discordSession := &Discord{client: &discordClient{Session: client}, prefix: onelib.DefaultPrefix, nickname: onelib.DefaultNickname}
+	discordSession := &Discord{client: &discord.DiscordClient{Session: client}, prefix: onelib.DefaultPrefix, nickname: onelib.DefaultNickname}
 
 	client.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) { // OnMessageCreate...
 		if m.Type == discordgo.MessageTypeDefault {
@@ -52,8 +56,8 @@ func Load() onelib.Protocol {
 			)
 
 			msg := &discordMessage{text: m.Content, id: onelib.UUID(m.ID)}
-			dc := &discordClient{Session: client}
-			dl := &discordLocation{Client: dc, uuid: onelib.UUID(m.ChannelID)}
+			dc := &discord.DiscordClient{Session: client}
+			dl := &discord.DiscordLocation{Client: dc, Uuid: onelib.UUID(m.ChannelID), GuildID: onelib.UUID(m.GuildID)}
 			if m.Member != nil && m.Member.Nick != "" {
 				displayName = m.Member.Nick
 			} else if m.Author != nil {
@@ -84,8 +88,8 @@ func Load() onelib.Protocol {
 		}
 
 		msg := &discordMessage{id: onelib.UUID(m.MessageID), emoji: &onelib.Emoji{Added: true, ID: onelib.UUID(m.Emoji.ID), Name: m.Emoji.Name}}
-		dc := &discordClient{Session: client}
-		dl := &discordLocation{Client: dc, uuid: onelib.UUID(m.ChannelID)}
+		dc := &discord.DiscordClient{Session: client}
+		dl := &discord.DiscordLocation{Client: dc, Uuid: onelib.UUID(m.ChannelID), GuildID: onelib.UUID(m.GuildID)}
 		sender := &discordSender{uuid: onelib.UUID(m.UserID), location: dl}
 
 		discordSession.update(msg, sender)
@@ -97,8 +101,8 @@ func Load() onelib.Protocol {
 		}
 
 		msg := &discordMessage{id: onelib.UUID(m.MessageID), emoji: &onelib.Emoji{Added: false, ID: onelib.UUID(m.Emoji.ID), Name: m.Emoji.Name}}
-		dc := &discordClient{Session: client}
-		dl := &discordLocation{Client: dc, uuid: onelib.UUID(m.ChannelID)}
+		dc := &discord.DiscordClient{Session: client}
+		dl := &discord.DiscordLocation{Client: dc, Uuid: onelib.UUID(m.ChannelID), GuildID: onelib.UUID(m.GuildID)}
 		sender := &discordSender{uuid: onelib.UUID(m.UserID), location: dl}
 
 		discordSession.update(msg, sender)
@@ -144,7 +148,7 @@ func (mm *discordMessage) Raw() []byte {
 
 type discordSender struct {
 	displayName, username string
-	location              *discordLocation
+	location              *discord.DiscordLocation
 	uuid                  onelib.UUID
 }
 
@@ -180,67 +184,6 @@ func (ms *discordSender) SendFormattedText(text, formattedText string) {
 	ms.location.Client.SendFormattedText(ms.uuid, text, formattedText)
 }
 
-type discordLocation struct {
-	Client                       *discordClient // pointer to originating client
-	displayName, nickname, topic string
-	uuid                         onelib.UUID
-}
-
-func (ml *discordLocation) DisplayName() string {
-	return ml.displayName
-}
-
-func (ml *discordLocation) Nickname() string {
-	return ml.nickname
-}
-
-func (ml *discordLocation) Topic() string {
-	return ml.topic
-}
-
-func (ml *discordLocation) UUID() onelib.UUID {
-	return ml.uuid
-}
-
-func (ml *discordLocation) Send(msg onelib.Message) {
-	ml.Client.Send(ml.uuid, msg)
-}
-
-func (ml *discordLocation) SendText(text string) {
-	ml.Client.SendText(ml.uuid, text)
-}
-
-func (ml *discordLocation) SendFormattedText(text, formattedText string) {
-	ml.Client.SendFormattedText(ml.uuid, text, formattedText)
-}
-
-func (ml *discordLocation) Protocol() string {
-	return NAME
-}
-
-type discordClient struct {
-	*discordgo.Session
-}
-
-// Send sends a Message object to a location specified by to (usually a location or sender UUID).
-func (dc *discordClient) Send(to onelib.UUID, msg onelib.Message) {
-	// code here
-}
-
-// SendText sends text to a location specified by to (usually a location or sender UUID).
-func (dc *discordClient) SendText(to onelib.UUID, text string) {
-	_, err := dc.Session.ChannelMessageSend(string(to), text)
-	if err != nil {
-		onelib.Error.Println(err)
-	}
-}
-
-// SendFormattedText sends formatted text to a location specified by to (usually a location or sender UUID).
-// FIXME currently ignores formatted text
-func (dc *discordClient) SendFormattedText(to onelib.UUID, text, formattedText string) {
-	dc.SendText(to, text)
-}
-
 // Discord is the Protocol object used for handling anything Discord related.
 type Discord struct {
 	/*
@@ -248,62 +191,62 @@ type Discord struct {
 	*/
 	prefix   string
 	nickname string
-	client   *discordClient
+	client   *discord.DiscordClient
 }
 
 // Name returns the name of the plugin, usually the filename.
-func (discord *Discord) Name() string {
+func (dis *Discord) Name() string {
 	return NAME
 }
 
 // LongName returns the display name of the plugin.
-func (discord *Discord) LongName() string {
+func (dis *Discord) LongName() string {
 	return LONGNAME
 }
 
 // Version returns the version of the plugin, usually in the format of "v0.0.0".
-func (discord *Discord) Version() string {
+func (dis *Discord) Version() string {
 	return VERSION
 }
 
 // NewMessage should generate a message object from something
-func (discord *Discord) NewMessage(raw []byte) onelib.Message {
+func (dis *Discord) NewMessage(raw []byte) onelib.Message {
 	return nil
 }
 
 // Send sends a Message object to a location specified by to (usually a location or sender UUID).
-func (discord *Discord) Send(to onelib.UUID, msg onelib.Message) {
-	discord.client.Send(to, msg)
+func (dis *Discord) Send(to onelib.UUID, msg onelib.Message) {
+	dis.client.Send(to, msg)
 }
 
 // SendText sends text to a location specified by to (usually a location or sender UUID).
-func (discord *Discord) SendText(to onelib.UUID, text string) {
-	discord.client.SendText(to, text)
+func (dis *Discord) SendText(to onelib.UUID, text string) {
+	dis.client.SendText(to, text)
 }
 
 // SendFormattedText sends formatted text to a location specified by to (usually a location or sender UUID).
-func (discord *Discord) SendFormattedText(to onelib.UUID, text, formattedText string) {
-	discord.client.SendFormattedText(to, text, formattedText)
+func (dis *Discord) SendFormattedText(to onelib.UUID, text, formattedText string) {
+	dis.client.SendFormattedText(to, text, formattedText)
 }
 
 // GetUserDisplayName returns a user's display name from a UUID
-//func (discord *Discord) GetUserDisplayName(uuid onelib.UUID) string
+//func (dis *Discord) GetUserDisplayName(uuid onelib.UUID) string
 
 // recv should be called after you've recieved data and built a Message object
-func (discord *Discord) recv(msg onelib.Message, sender onelib.Sender) {
+func (dis *Discord) recv(msg onelib.Message, sender onelib.Sender) {
 	if string(sender.UUID()) != discordAuthUser {
-		onelib.ProcessMessage(discord.prefix, msg, sender)
+		onelib.ProcessMessage(dis.prefix, msg, sender)
 	}
 }
 
 // update should be called after you've recieved an edit or reaction
-func (discord *Discord) update(msg onelib.Message, sender onelib.Sender) {
+func (dis *Discord) update(msg onelib.Message, sender onelib.Sender) {
 	if string(sender.UUID()) != discordAuthUser {
 		onelib.ProcessUpdate(msg, sender)
 	}
 }
 
-// Remove currently doesn't do anything.
-func (discord *Discord) Remove() {
-	discord.client.Session.Close()
+// Remove
+func (dis *Discord) Remove() {
+	dis.client.Session.Close()
 }

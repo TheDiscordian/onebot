@@ -28,6 +28,8 @@ auth_pass = ""
 [discord]
 # is set as "Bot auth_token"
 auth_token = ""
+# id of admin user (for certain plugins like 'roletriggers')
+admin_id = ""
 
 [irc_bnetd]
 # the username of the account on the PvPGN server to login as

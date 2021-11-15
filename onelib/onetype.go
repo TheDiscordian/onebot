@@ -262,6 +262,7 @@ type Database interface {
 	PutString(table, key, text string) error                         // Inserts text at location "key" for retrieval via GetString
 	PutInt(table, key string, i int) error                           // Inserts an integer at location "key" for retrieval via GetInt
 	PutObj(table, key string, obj interface{}) error                 // Inserts an object at location "key" for retrieval via GetObj
+	Remove(table, key string) error                                  // Removes an object at location "key"
 	SetIndex(table, field string) error                              // Sets an index on field. If using LevelDB, values in this field must be unique.
 	Close() error                                                    // Terminate a database session (only run if nothing is using the database).
 }
