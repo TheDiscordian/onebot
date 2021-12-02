@@ -139,8 +139,7 @@ func doIPFSFindProvsRequest(timeout time.Duration, url string) (int, error) {
 func ipfsDHTFindProvs(msg onelib.Message, sender onelib.Sender) {
 	const USAGE = "Usage: ipfs-findprovs <CID>"
 	txt := msg.Text()
-	splitTxt := strings.Split(txt, " ")
-	if len(splitTxt) != 1 {
+	if len(txt) <= 1 {
 		sender.Location().SendText(USAGE)
 		return
 	}
