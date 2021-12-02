@@ -159,7 +159,7 @@ func ipfsDHTFindProvs(msg onelib.Message, sender onelib.Sender) {
 func ipfsCheck(msg onelib.Message, sender onelib.Sender) {
 	const USAGE = "Usage: ipfs-check <multiaddr> <CID> [Backend URL]"
 	splitTxt := strings.Split(msg.Text(), " ")
-	if len(splitTxt) > 2 || len(splitTxt) > 3 {
+	if len(splitTxt) < 2 || len(splitTxt) > 3 {
 		sender.Location().SendText(USAGE)
 		return
 	}
