@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -41,7 +42,18 @@ type IPFSBitswapResp struct {
 	Found     bool
 }
 
-func doRequest(timeout time.Duration, url string) (*IPFSCheckResp, error) {
+type IPFSFindProvsResp struct {
+	ID        string
+	Responses []*IPFSPeer
+	Type      int
+}
+
+type IPFSPeer struct {
+	Addrs []string
+	ID    string
+}
+
+func doRequest(timeout time.Duration, url string) ([]byte, error) {
 	var cancel context.CancelFunc
 	ctx := context.Background()
 	if timeout > 0 {
@@ -63,6 +75,15 @@ func doRequest(timeout time.Duration, url string) (*IPFSCheckResp, error) {
 		return nil, err
 	}
 
+	return body, nil
+}
+
+func doIPFSCheckRequest(timeout time.Duration, url string) (*IPFSCheckResp, error) {
+	body, err := doRequest(timeout, url)
+	if err != nil {
+		return nil, err
+	}
+
 	out := new(IPFSCheckResp)
 	err = json.Unmarshal(body, out)
 	if err != nil {
@@ -72,10 +93,73 @@ func doRequest(timeout time.Duration, url string) (*IPFSCheckResp, error) {
 	return out, nil
 }
 
+func doIPFSFindProvsRequest(timeout time.Duration, url string) (int, error) {
+	var cancel context.CancelFunc
+	ctx := context.Background()
+	if timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+	c := &http.Client{}
+	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
+	if err != nil {
+		return 0, err
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	dec := json.NewDecoder(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	providers := 0
+	peers := make(map[string]int, 20)
+
+	// Decode the json stream and process it
+	for dec.More() {
+		out := new(IPFSFindProvsResp)
+		err := dec.Decode(out)
+		if err != nil {
+			return providers, err
+		}
+		if out.Type == 4 { // type 4 is "found" I guess
+			for _, peer := range out.Responses {
+				peers[peer.ID] = 0
+			}
+		}
+	}
+
+	return len(peers), nil
+}
+
+func ipfsDHTFindProvs(msg onelib.Message, sender onelib.Sender) {
+	const USAGE = "Usage: ipfs-findprovs <CID>"
+	txt := msg.Text()
+	splitTxt := strings.Split(txt, " ")
+	if len(splitTxt) != 1 {
+		sender.Location().SendText(USAGE)
+		return
+	}
+
+	sender.Location().SendText("Checking DHT for " + txt + " (up to 30s)")
+	providers, err := doIPFSFindProvsRequest(time.Second*30, "http://127.0.0.1:5001/api/v0/dht/findprovs?arg="+txt)
+	if err != nil && providers == 0 {
+		onelib.Debug.Println(err)
+		sender.Location().SendText(fmt.Sprintf("No providers found for %s within 30s.", txt))
+		return
+	}
+
+	sender.Location().SendText(fmt.Sprintf("%d providers found for %s.", providers, txt))
+}
+
 func ipfsCheck(msg onelib.Message, sender onelib.Sender) {
 	const USAGE = "Usage: ipfs-check <multiaddr> <CID> [Backend URL]"
 	splitTxt := strings.Split(msg.Text(), " ")
-	if len(splitTxt) < 2 || len(splitTxt) > 3 {
+	if len(splitTxt) > 2 || len(splitTxt) > 3 {
 		sender.Location().SendText(USAGE)
 		return
 	}
@@ -93,7 +177,7 @@ func ipfsCheck(msg onelib.Message, sender onelib.Sender) {
 	}
 	// peerId := multiaddr[peerIdIndex+5:]
 	addrPart := multiaddr[:peerIdIndex]
-	out, err := doRequest(time.Minute, backend+"?multiaddr="+multiaddr+"&cid="+cid)
+	out, err := doIPFSCheckRequest(time.Minute, backend+"?multiaddr="+multiaddr+"&cid="+cid)
 	if err != nil {
 		onelib.Error.Println("[IPFS] " + err.Error())
 		sender.Location().SendText("Error parsing response: " + err.Error())
@@ -163,7 +247,7 @@ func (ip *IPFSPlugin) Version() string {
 
 // Implements returns a map of commands and monitor the plugin implements.
 func (ip *IPFSPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"ipfs-check": ipfsCheck}, nil
+	return map[string]onelib.Command{"ipfs-check": ipfsCheck, "ipfs-findprovs": ipfsDHTFindProvs}, nil
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.
