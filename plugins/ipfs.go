@@ -147,12 +147,29 @@ func ipfsDHTFindProvs(msg onelib.Message, sender onelib.Sender) {
 	sender.Location().SendText("Checking DHT for " + txt + " (up to 30s)")
 	providers, err := doIPFSFindProvsRequest(time.Second*30, "http://127.0.0.1:5001/api/v0/dht/findprovs?arg="+txt)
 	if err != nil && providers == 0 {
-		onelib.Debug.Println(err)
 		sender.Location().SendText(fmt.Sprintf("No providers found for %s within 30s.", txt))
 		return
 	}
 
 	sender.Location().SendText(fmt.Sprintf("%d providers found for %s.", providers, txt))
+}
+
+func ipfsBlockStat(msg onelib.Message, sender onelib.Sender) {
+	const USAGE = "Usage: ipfs-stat <CID>"
+	txt := msg.Text()
+	if len(txt) <= 1 {
+		sender.Location().SendText(USAGE)
+		return
+	}
+
+	sender.Location().SendText("Trying to stat " + txt + " (up to 30s)")
+	body, err := doRequest(time.Second*30, "http://127.0.0.1:5001/api/v0/block/stat?arg="+txt)
+	if err != nil || string(body) == "" {
+		sender.Location().SendText(fmt.Sprintf("Failed to retrieve %s within 30s.", txt))
+		return
+	}
+
+	sender.Location().SendText(fmt.Sprintf("Successfully retrieved %s.", txt))
 }
 
 func ipfsCheck(msg onelib.Message, sender onelib.Sender) {
@@ -246,7 +263,7 @@ func (ip *IPFSPlugin) Version() string {
 
 // Implements returns a map of commands and monitor the plugin implements.
 func (ip *IPFSPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"ipfs-check": ipfsCheck, "ipfs-findprovs": ipfsDHTFindProvs}, nil
+	return map[string]onelib.Command{"ipfs-check": ipfsCheck, "ipfs-findprovs": ipfsDHTFindProvs, "ipfs-stat": ipfsBlockStat}, nil
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.
