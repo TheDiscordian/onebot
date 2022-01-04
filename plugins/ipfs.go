@@ -223,7 +223,7 @@ func ipfsCheck(msg onelib.Message, sender onelib.Sender) {
 	if out.CidInDHT {
 		resp += "✅ Found multihash adverised in the dht\n"
 	} else {
-		resp += "❌ The peer responded that it does not have the CID\n"
+		resp += "❌ Could not find the multihash in the dht\n"
 	}
 
 	if out.DataAvailableOverBitswap.Error != "" {
