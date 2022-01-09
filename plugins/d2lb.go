@@ -5,7 +5,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 
 	"github.com/TheDiscordian/onebot/onelib"
 	"github.com/lunixbochs/struc"
@@ -17,7 +21,7 @@ const (
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Diablo II Leaderboards"
 	// VERSION of the plugin
-	VERSION = "v0.0.0"
+	VERSION = "v0.0.1"
 )
 
 var (
@@ -31,11 +35,21 @@ func Load() onelib.Plugin {
 	return new(D2LBPlugin)
 }
 
+func formatXp(xp int) string {
+	outMsg := "%d"
+	if xp >= 1000000 {
+		outMsg = "%dK"
+		xp /= 1000
+	}
+	p := message.NewPrinter(language.English)
+	return p.Sprintf(outMsg, xp)
+}
+
 func createTable(title string, chars []*CharInfo) (text, formattedText string) {
 	text = fmt.Sprintf("Diablo II %s Ladder:\n", title)
-	formattedText = fmt.Sprintf("<strong>Diablo II %s Ladder:</strong><br /><table><tr><th> # </th><th> Name </th><th> Class </th><th> Level </th><th> XP </th></tr><br />", title)
+	formattedText = fmt.Sprintf("<strong>Diablo II %s Ladder:</strong><br />\n<table><tr><th> # </th><th> Name </th><th> Class </th><th> Level </th><th> XP </th></tr><br />\n", title)
 	for i, char := range chars { // getTitle(c Class, expansion bool, difficulty int, hardcore bool)
-		text += fmt.Sprintf("    %d. %s [%s] Lvl.%d (%dxp)\n", i+1, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, classToString(char.Class), char.Level, char.Experience)
+		text += fmt.Sprintf("    %d. %s [%s] Lvl.%d (%sxp)\n", i+1, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, classToString(char.Class), char.Level, formatXp(char.Experience))
 		var highlight, highlightCloser string
 		switch i {
 		case 0:
@@ -48,7 +62,7 @@ func createTable(title string, chars []*CharInfo) (text, formattedText string) {
 			highlight = `<font color="#6A3805">`
 			highlightCloser = "</font>"
 		}
-		formattedText += fmt.Sprintf("<tr><td> %s%d%s  </td><th>  <strong>%s%s%s</strong>  </th><td> %s  </td><td> %d  </td><td> %d</td></tr>", highlight, i+1, highlightCloser, highlight, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, highlightCloser, classToString(char.Class), char.Level, char.Experience)
+		formattedText += fmt.Sprintf("<tr><td> %s%d%s  </td><th>  <strong>%s%s%s</strong>  </th><td> %s  </td><td> %d  </td><td> %s<br /></td></tr>\n", highlight, i+1, highlightCloser, highlight, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, highlightCloser, classToString(char.Class), char.Level, formatXp(char.Experience))
 		if i <= 2 {
 			formattedText += "</font>"
 		}
@@ -58,31 +72,51 @@ func createTable(title string, chars []*CharInfo) (text, formattedText string) {
 }
 
 func d2xpLb(msg onelib.Message, sender onelib.Sender) {
-	_, _, exp, _ := getLeaderboards(10)
+	lbn, err := strconv.Atoi(msg.Text())
+	if err != nil {
+		lbn = 10
+	}
+	_, _, exp, _ := getLeaderboards(lbn)
 	text, formattedText := createTable("Expansion", exp)
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
 func d2xphcLb(msg onelib.Message, sender onelib.Sender) {
-	_, _, _, exphc := getLeaderboards(10)
+	lbn, err := strconv.Atoi(msg.Text())
+	if err != nil {
+		lbn = 10
+	}
+	_, _, _, exphc := getLeaderboards(lbn)
 	text, formattedText := createTable("Expansion Hardcore", exphc)
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
 func d2Lb(msg onelib.Message, sender onelib.Sender) {
-	d2, _, _, _ := getLeaderboards(10)
+	lbn, err := strconv.Atoi(msg.Text())
+	if err != nil {
+		lbn = 10
+	}
+	d2, _, _, _ := getLeaderboards(lbn)
 	text, formattedText := createTable("Standard", d2)
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
 func d2hcLb(msg onelib.Message, sender onelib.Sender) {
-	_, hc, _, _ := getLeaderboards(10)
+	lbn, err := strconv.Atoi(msg.Text())
+	if err != nil {
+		lbn = 10
+	}
+	_, hc, _, _ := getLeaderboards(lbn)
 	text, formattedText := createTable("Standard Hardcore", hc)
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
 func d2AllLb(msg onelib.Message, sender onelib.Sender) {
-	d2, hc, exp, exphc := getLeaderboards(3)
+	lbn, err := strconv.Atoi(msg.Text())
+	if err != nil {
+		lbn = 3
+	}
+	d2, hc, exp, exphc := getLeaderboards(lbn)
 	text, formattedText := createTable("Standard", d2)
 	text2, formattedText2 := createTable("Standard Hardcore", hc)
 	text3, formattedText3 := createTable("Expansion", exp)
@@ -267,6 +301,9 @@ func getTitle(c Class, expansion bool, difficulty int, hardcore bool) string {
 
 // count must be positive and non-zero, or you won't get any results
 func getLeaderboards(count int) (norm, hc, exp, expHc []*CharInfo) {
+	if count > 50 {
+		count = 50
+	}
 	f, err := os.Open(d2lbLadderPath)
 	if err != nil {
 		onelib.Error.Println(err)
