@@ -9,6 +9,7 @@ require (
 	github.com/pelletier/go-toml v1.9.3
 	github.com/syndtr/goleveldb v1.0.0
 	go.mongodb.org/mongo-driver v1.7.0
+	golang.org/x/text v0.3.5
 )
 
 replace github.com/TheDiscordian/gomatrix => ../gomatrix
