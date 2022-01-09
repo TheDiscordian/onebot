@@ -61,7 +61,7 @@ func createTable(title string, chars []*CharInfo) (text, formattedText string) {
 			highlight = `<font color="#6A3805">`
 			highlightCloser = "</font>"
 		}
-		formattedText += fmt.Sprintf("<tr><td> %s%d%s  </td><th>  <strong>%s%s%s</strong>  </th><td> %s  </td><td> %d  </td><td> %s</td></tr><br />\n", highlight, i+1, highlightCloser, highlight, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, highlightCloser, classToString(char.Class), char.Level, formatXp(char.Experience))
+		formattedText += fmt.Sprintf("<tr><td> %s%d%s  </td><th>  <strong>%s%s%s</strong>  </th><td> %s  </td><td> %d  </td><td> %s<br /></td></tr>\n", highlight, i+1, highlightCloser, highlight, getTitle(char.Class, char.expansion, char.difficulty, char.hardcore)+char.CharName, highlightCloser, classToString(char.Class), char.Level, formatXp(char.Experience))
 		if i <= 2 {
 			formattedText += "</font>"
 		}
