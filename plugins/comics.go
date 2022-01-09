@@ -56,8 +56,8 @@ func getComicInfo(url string) (title string, imageURL string, extraText string) 
 	text := string(rawText)
 	text = text[strings.Index(text, "<title>")+7:]
 	title = text[:strings.Index(text, "</title>")]
-	iText := text[strings.Index(text, "Image URL (for hotlinking/embedding): ")+38:]
-	imageURL = iText[:strings.Index(iText, "\n")]
+	iText := text[strings.Index(text, "Image URL (for hotlinking/embedding): <a href= \"")+48:]
+	imageURL = iText[:strings.Index(iText, "\"")]
 
 	altText := "{{Title text: "
 	altTextEnd := "}}"
@@ -90,7 +90,7 @@ func comic(msg onelib.Message, sender onelib.Sender) {
 	url := fmt.Sprintf("https://www.xkcd.com/%d", rand.Intn(max-min+1)+min)
 	title, imageURL, extraText := getComicInfo(url)
 	text := fmt.Sprintf("Your comic: \"%s\": %s\n*%s*", title, url, extraText)
-	formattedText := fmt.Sprintf("Your comic: <a href=%s>%s</a> (<a href=%s>Web</a>)<br />\n<i>%s</i>", imageURL, title, url, extraText)
+	formattedText := fmt.Sprintf("Your comic: <a href=\"%s\">%s</a> (<a href=\"%s\">Web</a>)<br />\n<i>%s</i>", imageURL, title, url, extraText)
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
