@@ -54,3 +54,7 @@ dest = '[{"protocol":"matrix","channel":"!example:matrix.org"}]'
 [d2lb]
 # path to ladder.D2DV
 ladder_path = "/usr/local/var/pvpgn/ladders/ladder.D2DV"
+
+[ipfs]
+# web3.storage api key which will be used by users who don't have their own API key registered with the bot
+shared_web3_storage_key = ""
