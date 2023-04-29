@@ -5,10 +5,10 @@ default_nickname = "OneBot"
 default_avatar = ""
 
 plugin_path = "plugins"
-plugins = ["parrot", "roll", "8ball", "tarkovbud", "money", "comics", "bashquotes", "factcrow"]
+plugins = ["parrot", "dice", "8ball", "money", "comics", "bashquotes", "factcrow"]
 
 protocol_path = "protocols"
-protocols = ["matrix", "discord"]
+protocols = ["matrix", "discord", "bluesky"]
 
 [database]
 engine = "leveldb" # valid values are 'leveldb' or 'mongodb'
@@ -31,6 +31,20 @@ auth_token = ""
 # id of admin user (for certain plugins like 'roletriggers')
 admin_id = ""
 
+[bluesky]
+# The handle on Bluesky of the account to use
+handle = ""
+# The password of the Bluesky account
+password = ""
+# The number of posts to fetch at once per poll
+feed_count = "25"
+# The number of seconds to wait in between polls
+feed_freq = "10"
+
+#
+# Disabled by default plugins
+#
+
 [irc_bnetd]
 # the username of the account on the PvPGN server to login as
 nick = "OneBot"
@@ -40,10 +54,6 @@ pass = ""
 server = "localhost:6667"
 # channels to autojoin after connection (comma separated)
 auto_join = "#Diablo_II-1"
-
-#
-# Disabled by default plugins
-#
 
 [bnetdbridge]
 # bnetd irc channel to watch

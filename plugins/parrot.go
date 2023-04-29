@@ -4,6 +4,7 @@ package main
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/TheDiscordian/onebot/onelib"
 )
@@ -51,6 +52,7 @@ func formatParrot(msg onelib.Message, sender onelib.Sender) {
 type ParrotPlugin struct {
 	monitor *onelib.Monitor
 	msgs    map[onelib.UUID]string
+	lock    sync.RWMutex
 }
 
 // Name returns the name of the plugin, usually the filename.
@@ -77,11 +79,15 @@ func (pp *ParrotPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message
 			return
 		}
 	} else {
+		pp.lock.Lock()
 		pp.msgs[from.Location().UUID()] = txt
+		pp.lock.Unlock()
 		return
 	}
 	loc := from.Location()
+	pp.lock.RLock()
 	outMsg := strings.ReplaceAll(pp.msgs[loc.UUID()], splitMsg[1], splitMsg[2])
+	pp.lock.RUnlock()
 	loc.SendText(outMsg)
 }
 
