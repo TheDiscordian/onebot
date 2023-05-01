@@ -267,7 +267,6 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		{"You convince someone that birds aren't real, doing the world a service, and gain **%s%d**.", "You convince someone that birds aren't real, doing the world a service, and gain <strong>%s%d</strong>."},
 		{"You make an original Steamed Hams video and gain **%s%d**.", "You make an original Steamed Hams video and gain <strong>%s%d</strong>."},
 		{"You make a nice meme, and it hits the Reddit frontpage! Your upvotes are worth **%s%d**.", "You make a nice meme, and it hits the Reddit frontpage! Your upvotes are worth <strong>%s%d</strong>."},
-		{"Someone on r/okaybuddyretard thinks you're genuinely retarded! Good job, have **%s%d**.", "Someone on r/okaybuddyretard thinks you're genuinely retarded! Good job, have <strong>%s%d</strong>."},
 	}
 	memeNegativeResponses := [][2]string{
 		{"You talked shit, and got hit, pay a fine of **%s%d**.", "You talked shit, and got hit, pay a fine of <strong>%s%d</strong>."},
@@ -279,7 +278,6 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		{"You shout the N Word in an urban environment and get robbed for **%s%d**.", "You shout the N Word in an urban environment and get robbed for <strong>%s%d</strong>."},
 		{"You let your memes be dreams and lost **%s%d**.", "You let your memes be dreams and lost <strong>%s%d</strong>."},
 		{"You think you made a decent meme, but the mods delete it and take **%s%d** from you 😰.", "You think you made a decent meme, but the mods delete it and take <strong>%s%d</strong> from you 😰."},
-		{"You're caught being untarded on r/okaybuddyretard and are forced to pay **%s%d** to Big Chungus.", "You're caught being untarded on r/okaybuddyretard and are forced to pay <strong>%s%d</strong> to Big Chungus."},
 	}
 	text, formattedText := performAction(sender.UUID(), "meme", "meme", memeMin, memeMax, memeFineMin, memeFineMax, memeFail, memeResponses, memeNegativeResponses, memeTime)
 	sender.Location().SendFormattedText(text, formattedText)
