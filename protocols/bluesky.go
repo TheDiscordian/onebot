@@ -43,6 +43,7 @@ var (
 	blueskyPassword string
 	feedCount       int
 	feedFreq        int
+	followFreq      int
 )
 
 func loadConfig() {
@@ -53,6 +54,8 @@ func loadConfig() {
 	feedCount, _ = strconv.Atoi(feedCount_str)
 	feedFreq_str := onelib.GetTextConfig(NAME, "feed_freq")
 	feedFreq, _ = strconv.Atoi(feedFreq_str)
+	followFreq_str := onelib.GetTextConfig(NAME, "follow_freq")
+	followFreq, _ = strconv.Atoi(followFreq_str)
 }
 
 // Load connects to Bluesky, and sets up listeners. It's required for OneBot.
@@ -62,11 +65,143 @@ func Load() onelib.Protocol {
 	if err != nil {
 		onelib.Error.Println("["+NAME+"] Error creating session:", err)
 	}
-	bsProto := Bluesky{prefix: onelib.DefaultPrefix, nickname: blueskyHandle}
-	stop := make(chan bool)
-	go bsProto.recv(stop)
+	bsProto := Bluesky{prefix: onelib.DefaultPrefix, nickname: blueskyHandle, seenPosts: make(map[string]bool), stop: make(chan bool)}
+	go bsProto.recv(bsProto.stop)
+	go syncFollowers(bsProto.stop)
 
 	return onelib.Protocol(&bsProto)
+}
+
+func syncFollowers(stop chan bool) {
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+		}
+		follows, err := getFollowsMap()
+		if err != nil {
+			onelib.Error.Println("["+NAME+"] Error getting follows:", err)
+			time.Sleep(time.Duration(followFreq) * time.Second)
+			continue
+		}
+		followers, err := getFollowersMap()
+		if err != nil {
+			onelib.Error.Println("["+NAME+"] Error getting followers:", err)
+			time.Sleep(time.Duration(followFreq) * time.Second)
+			continue
+		}
+		// See who follows us, but we don't follow them and follow them
+		for follower := range followers {
+			if !follows[follower] {
+				err = followUser(follower)
+				time.Sleep(time.Second)
+				if err != nil {
+					onelib.Error.Println("["+NAME+"] Error following user:", err)
+				}
+			} else {
+				delete(follows, follower)
+			}
+		}
+		// See who we follow, but they don't follow us and unfollow them (WIP)
+		/*
+			for follow := range follows {
+				err = unfollowUser(follow)
+				if err != nil {
+					onelib.Error.Println("["+NAME+"] Error unfollowing user:", err)
+				}
+			}*/
+		time.Sleep(time.Duration(followFreq) * time.Second)
+	}
+}
+
+func followUser(did string) error {
+	auth := getAuthInfo()
+	xrpcc, err := getXrpcClient(auth)
+	if err != nil {
+		return err
+	}
+
+	follow := bsky.GraphFollow{
+		LexiconTypeID: "app.bsky.graph.follow",
+		CreatedAt:     time.Now().Format(time.RFC3339),
+		Subject:       did,
+	}
+
+	_, err = atproto.RepoCreateRecord(context.TODO(), xrpcc, &atproto.RepoCreateRecord_Input{
+		Collection: "app.bsky.graph.follow",
+		Repo:       xrpcc.Auth.Did,
+		Record:     &lexutil.LexiconTypeDecoder{&follow},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func unfollowUser(did string) error {
+	/*auth := getAuthInfo()
+	xrpcc, err := getXrpcClient(auth)
+	if err != nil {
+		return err
+	}
+
+	follow := bsky.GraphFollow{
+		LexiconTypeID: "app.bsky.graph.follow",
+		CreatedAt:     time.Now().Format(time.RFC3339),
+		Subject:       did,
+	}
+
+	err := atproto.RepoDeleteRecord(context.TODO(), xrpcc, &atproto.RepoDeleteRecord_Input{
+		Collection: "app.bsky.graph.follow",
+		Repo:       xrpcc.Auth.Did,
+		Record:     &lexutil.LexiconTypeDecoder{&follow},
+	})
+	if err != nil {
+		return err
+	}*/
+	// Not yet implmented
+
+	return nil
+}
+
+func getFollowsMap() (followsMap map[string]bool, err error) {
+	auth := getAuthInfo()
+	xrpcc, err := getXrpcClient(auth)
+	if err != nil {
+		return
+	}
+
+	follows, err := bsky.GraphGetFollows(context.TODO(), xrpcc, blueskyHandle, "", 100)
+	if err != nil {
+		return
+	}
+	followsMap = make(map[string]bool, len(follows.Follows))
+	for _, f := range follows.Follows {
+		followsMap[f.Did] = true
+	}
+
+	return
+}
+
+func getFollowersMap() (followersMap map[string]bool, err error) {
+	auth := getAuthInfo()
+	xrpcc, err := getXrpcClient(auth)
+	if err != nil {
+		return
+	}
+
+	followers, err := bsky.GraphGetFollowers(context.TODO(), xrpcc, blueskyHandle, "", 100)
+	if err != nil {
+		return
+	}
+	followersMap = make(map[string]bool, len(followers.Followers))
+	for _, f := range followers.Followers {
+		followersMap[f.Did] = true
+	}
+
+	return
 }
 
 func newHttpClient() *http.Client {
@@ -180,6 +315,8 @@ type Bluesky struct {
 	prefix   string
 	nickname string
 	stop     chan bool
+
+	seenPosts map[string]bool
 }
 
 // Name returns the name of the plugin, usually the filename.
@@ -232,7 +369,9 @@ func (bs *Bluesky) recv(stop chan bool) {
 		feed, err := getFeed(int64(feedCount))
 		if err != nil {
 			onelib.Error.Println("["+NAME+"] Error getting feed:", err)
-			time.Sleep(time.Duration(feedFreq) * time.Second)
+			time.Sleep(time.Duration(feedFreq/2+1) * time.Second)
+			createSession(blueskyHandle, blueskyPassword)
+			time.Sleep(time.Duration(feedFreq/2+1) * time.Second)
 			continue
 		}
 		firstCID := feed[0].Post.Cid
@@ -244,6 +383,11 @@ func (bs *Bluesky) recv(stop chan bool) {
 			if post == nil || post.Author.Handle == blueskyHandle {
 				continue
 			}
+			if bs.seenPosts[post.Cid] {
+				break
+			}
+			bs.seenPosts[post.Cid] = true
+
 			reply := item.Reply
 
 			msg := &bskyMessage{
@@ -278,6 +422,7 @@ func (bs *Bluesky) recv(stop chan bool) {
 
 // Remove should disconnect any open connections making it so the bot can forget about the protocol cleanly.
 func (bs *Bluesky) Remove() {
+	bs.stop <- true
 	bs.stop <- true
 }
 

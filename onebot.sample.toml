@@ -37,9 +37,11 @@ handle = ""
 # The password of the Bluesky account
 password = ""
 # The number of posts to fetch at once per poll
-feed_count = "25"
+feed_count = "50"
 # The number of seconds to wait in between polls
 feed_freq = "10"
+# The number of seconds to wait in between syncing followers
+follow_freq = "60"
 
 #
 # Disabled by default plugins
