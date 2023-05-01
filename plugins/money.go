@@ -379,7 +379,7 @@ func leaderboard(msg onelib.Message, sender onelib.Sender) {
 		} else {
 			displayName = string(uco.UUID)
 		}
-		rtext = append(rtext, []rune(fmt.Sprintf("%d. %s (%s%d)\n", i+1, displayName, DEFAULT_CURRENCY, uco.Quantity+uco.BankQuantity))...)
+		rtext = append(rtext, []rune(fmt.Sprintf("%d. @%s (%s%d)\n", i+1, displayName, DEFAULT_CURRENCY, uco.Quantity+uco.BankQuantity))...)
 	}
 	sender.Location().SendText(string(rtext))
 }

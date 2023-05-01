@@ -11,6 +11,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	go.mongodb.org/mongo-driver v1.7.0
 	golang.org/x/text v0.8.0
+	mvdan.cc/xurls/v2 v2.5.0 // indirect
 )
 
 replace github.com/TheDiscordian/gomatrix => ../gomatrix

@@ -16,6 +16,7 @@ import (
 	"github.com/bluesky-social/indigo/api/bsky"
 	lexutil "github.com/bluesky-social/indigo/lex/util"
 	"github.com/bluesky-social/indigo/xrpc"
+	"mvdan.cc/xurls/v2"
 )
 
 /* NOTES:
@@ -272,6 +273,42 @@ func post(text string, reply *bsky.FeedPost_ReplyRef) error {
 		return err
 	}
 
+	// reformat the text
+	// replace all "**" with nothing
+	text = strings.ReplaceAll(text, "**", "")
+	// find all URLs in text, create RichtextFacet_Link for each
+	relaxed := xurls.Relaxed()
+	urls := relaxed.FindAllStringIndex(text, -1)
+	var facets []*bsky.RichtextFacet
+	if len(urls) > 0 {
+		facets = make([]*bsky.RichtextFacet, len(urls))
+		for i, u := range urls {
+			// skip the entry if it's a mention (TODO: Handle mentions, don't actually mention, but link to profile)
+			var out string
+			if u[0] > 0 && text[u[0]-1] == '@' {
+				out = "https://staging.bsky.app/profile/" + text[u[0]:u[1]]
+				u[0] -= 1
+			} else if len(text[u[0]:u[1]]) > len("https://") && text[u[0]:u[1]][0:len("https://")] == "https://" {
+				out = text[u[0]:u[1]]
+			} else {
+				out = "https://" + text[u[0]:u[1]]
+			}
+			facets[i] = &bsky.RichtextFacet{
+				Index: &bsky.RichtextFacet_ByteSlice{
+					ByteStart: int64(u[0]),
+					ByteEnd:   int64(u[1]),
+				},
+				Features: []*bsky.RichtextFacet_Features_Elem{
+					&bsky.RichtextFacet_Features_Elem{
+						RichtextFacet_Link: &bsky.RichtextFacet_Link{
+							Uri: out,
+						},
+					},
+				},
+			}
+		}
+	}
+
 	_, err = atproto.RepoCreateRecord(context.TODO(), xrpcc, &atproto.RepoCreateRecord_Input{
 		Collection: "app.bsky.feed.post",
 		Repo:       auth.Did,
@@ -279,6 +316,7 @@ func post(text string, reply *bsky.FeedPost_ReplyRef) error {
 			Text:      text,
 			CreatedAt: time.Now().Format("2006-01-02T15:04:05.000Z"),
 			Reply:     reply,
+			Facets:    facets,
 		}},
 	})
 	if err != nil {
