@@ -415,14 +415,11 @@ func (bs *Bluesky) recv(stop chan bool) {
 		firstCID := feed[0].Post.Cid
 		for _, item := range feed {
 			post := item.Post
-			if post.Cid == lastCID {
+			if post.Cid == lastCID || post.Author.Handle == blueskyHandle || bs.seenPosts[post.Cid] {
 				break
 			}
-			if post == nil || post.Author.Handle == blueskyHandle {
+			if post == nil {
 				continue
-			}
-			if bs.seenPosts[post.Cid] {
-				break
 			}
 			bs.seenPosts[post.Cid] = true
 
