@@ -18,15 +18,6 @@ import (
 	"mvdan.cc/xurls/v2"
 )
 
-/* NOTES:
-- IDs never contain "$" so for now let's do CID$URI so we have all the data we could possibly need available.
-  - It appears BlueSky would like us to send the RootID(s) over too, let's hope that's optional or we'll have to extend this jank...
-- ["post"]["author"]["viewer"]["following"] is present if WE follow THEM: "at://did:plc:wjeojdonqywpw5ktsernlecj/app.bsky.graph.follow/3ju2xtrm5zy2l"
-- ["post"]["author"]["viewer"]["followedBy"] is present if THEY follow US: "at://did:plc:2cxgdrgtsmrbqnjkwyplmp43/app.bsky.graph.follow/3jqcgeqz74c2q"
-- ["post"]["author"]["viewer"]["muted"] is "true" if the user is muted
-- ["post"]["record"]["reply"]["root"] contains the "root" thread if available. (If replying "parent" becomes the post you're replying to)
-*/
-
 const (
 	// NAME is same as filename, minus extension
 	NAME = "bluesky"
