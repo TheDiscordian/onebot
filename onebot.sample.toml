@@ -43,6 +43,14 @@ feed_freq = 10
 # The number of seconds to wait in between syncing followers
 follow_freq = 60
 
+[money]
+# Time until "cute" can be called again
+cute_time = "150m"
+# Time until "chill" can be called again
+chill_time = "30m"
+# Time until "meme" can be called again
+meme_time = "260s"
+
 #
 # Disabled by default plugins
 #

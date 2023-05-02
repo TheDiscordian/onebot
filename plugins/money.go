@@ -19,13 +19,25 @@ const (
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Currency Plugin"
 	// VERSION of the plugin
-	VERSION = "v0.0.1"
+	VERSION = "v0.0.2"
 
 	// DEFAULT_CURRENCY is the default currency symbol
 	DEFAULT_CURRENCY = "★"
 )
 
 // TODO command to assign a location to a currency location uuid. Allow it to only be unset by whoever set it.
+
+
+var (
+	// UserActionMap used for storing the last time an action was called
+	UserActionMap *userMap
+	// AliasConfirmMap stores aliases waiting to be confirmed, key is requester, val is target
+	AliasConfirmMap *aliasConfirmMap
+
+	cuteTime time.Duration
+	chillTime time.Duration
+	memeTime time.Duration
+)
 
 // Load returns the Plugin object.
 func Load() onelib.Plugin {
@@ -36,6 +48,20 @@ func Load() onelib.Plugin {
 	AliasConfirmMap = new(aliasConfirmMap)
 	AliasConfirmMap.uMap = make(map[onelib.UUID]onelib.UUID, 1)
 	AliasConfirmMap.lock = new(sync.RWMutex)
+
+	var err error
+	cuteTime, err = time.ParseDuration(onelib.GetTextConfig(NAME, "cute_time"))
+	if err != nil {
+		onelib.Error.Panicln("Error parsing cute_time duration.")
+	}
+	chillTime, err = time.ParseDuration(onelib.GetTextConfig(NAME, "chill_time"))
+	if err != nil {
+		onelib.Error.Panicln("Error parsing chill_time duration.")
+	}
+	memeTime, err = time.ParseDuration(onelib.GetTextConfig(NAME, "meme_time"))
+	if err != nil {
+		onelib.Error.Panicln("Error parsing meme_time duration.")
+	}
 	return new(MoneyPlugin)
 }
 
@@ -62,13 +88,6 @@ func (acm *aliasConfirmMap) Delete(requester onelib.UUID) {
 	delete(acm.uMap, requester)
 	acm.lock.Unlock()
 }
-
-var (
-	// UserActionMap used for storing the last time an action was called
-	UserActionMap *userMap
-	// AliasConfirmMap stores aliases waiting to be confirmed, key is requester, val is target
-	AliasConfirmMap *aliasConfirmMap
-)
 
 type userMap struct {
 	uMap map[onelib.UUID]lastAction
@@ -156,7 +175,6 @@ func cute(msg onelib.Message, sender onelib.Sender) {
 	const (
 		cuteMax  = 245
 		cuteMin  = 5
-		cuteTime = time.Minute * 150 // time until command can be called again
 	)
 	cuteResponses := [][2]string{
 		{"You help Miles build robots and gain **%s%d**!", "You help Miles build robots and gain <strong>%s%d</strong>!"},
@@ -197,7 +215,6 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		chillFineMax = 145
 		chillFineMin = 1
 		chillFail    = 3                // 1 in x of failure
-		chillTime    = time.Minute * 30 // time until command can be called again
 	)
 	chillResponses := [][2]string{
 		{"Smoke weed with Snoop Dogg and gain **%s%d**!", "Smoke weed with Snoop Dogg and gain <strong>%s%d</strong>!"},
@@ -253,7 +270,6 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		memeFineMax = 250
 		memeFineMin = 5
 		memeFail    = 20                // 1 in x of failure
-		memeTime    = time.Second * 260 // time until command can be called again
 	)
 	memeResponses := [][2]string{
 		{"Dab on all them haters and gain **%s%d**!", "Dab on all them haters and gain <strong>%s%d</strong>!"},
