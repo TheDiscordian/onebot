@@ -39,7 +39,7 @@ func SetTextConfig(plugin, key, text string) {
 // LoadConfig loads the configuration file and inits the DB. This does not respect locks on config, do not run this
 // while any goroutines are running. Ultimately this will check the DB before loading from the config file.
 // TODO set default config path
-// TODO check DB before config file
+// TODO add an option to check DB before config file
 func LoadConfig() {
 	var err error
 	config, err = toml.LoadFile("onebot.toml")
