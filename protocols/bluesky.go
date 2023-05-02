@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -51,12 +50,9 @@ func loadConfig() {
 	// BlueskyServer = onelib.GetTextConfig(NAME, "server")
 	blueskyHandle = onelib.GetTextConfig(NAME, "handle")
 	blueskyPassword = onelib.GetTextConfig(NAME, "password")
-	feedCount_str := onelib.GetTextConfig(NAME, "feed_count")
-	feedCount, _ = strconv.Atoi(feedCount_str)
-	feedFreq_str := onelib.GetTextConfig(NAME, "feed_freq")
-	feedFreq, _ = strconv.Atoi(feedFreq_str)
-	followFreq_str := onelib.GetTextConfig(NAME, "follow_freq")
-	followFreq, _ = strconv.Atoi(followFreq_str)
+	feedCount, _ = onelib.GetIntConfig(NAME, "feed_count")
+	feedFreq, _ = onelib.GetIntConfig(NAME, "feed_freq")
+	followFreq, _ = onelib.GetIntConfig(NAME, "follow_freq")
 }
 
 // Load connects to Bluesky, and sets up listeners. It's required for OneBot.
@@ -447,6 +443,8 @@ func (bs *Bluesky) recv(stop chan bool) {
 				location: location,
 			}
 
+			// Calling this twice for one message is bad practice. Maybe there should be a way to
+			// call ProcessMessage without triggering monitors twice.
 			onelib.ProcessMessage(bs.prefix, msg, sender)
 			onelib.ProcessMessage("@"+blueskyHandle+" ", msg, sender)
 		}

@@ -20,6 +20,17 @@ func GetTextConfig(plugin, key string) string {
 	return ""
 }
 
+// GetIntConfig returns a config value, checking the DB first, expecting an int.
+func GetIntConfig(plugin, key string) (int, error) {
+	if num, err := Db.GetInt(plugin, key); err == nil {
+		return num, nil
+	}
+	if cfg := config.Get(fmt.Sprintf("%s.%s", plugin, key)); cfg != nil {
+		return int(cfg.(int64)), nil
+	}
+	return 0, fmt.Errorf("config key '%s.%s' not found", plugin, key)
+}
+
 // SetTextConfig sets a string config value.
 func SetTextConfig(plugin, key, text string) {
 	Db.PutString(plugin, key, text)
