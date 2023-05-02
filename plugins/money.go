@@ -226,7 +226,7 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 	chillNegativeResponses := [][2]string{
 		{"You roll a bad blunt and Snoop Dogg notices, pay a fine of **%s%d**...", "You roll a bad blunt and Snoop Dogg notices, pay a fine of <strong>%s%d</strong>..."},
 		{"You play some 100%% Orange Juice with your friends. You come in last and lose **%s%d**.", "You play some 100%% Orange Juice with your friends. You come in last and lose <strong>%s%d</strong>."},
-		{"You have a bad trip and end up fucking your friend's mother. Pay a fine of **%s%d**.", "You have a bad trip and end up fucking your friend's mother. Pay a fine of <strong>%s%d</strong>."},
+		{"You have a bad trip and end up sleeping with your friend's mother. Pay a fine of **%s%d**.", "You have a bad trip and end up sleeping with your friend's mother. Pay a fine of <strong>%s%d</strong>."},
 		{"You fuck your friend's mother, but you don't perform very well and she charges you **%s%d** for the inconvenience.", "You fuck your friend's mother, but you don't perform very well and she charges you <strong>%s%d</strong> for the inconvenience."},
 		{"You play some Monopoly and the cold hard reality of capitalism sets in... you lose **%s%d**.", "You play some Monopoly and the cold hard reality of capitalism sets in... you lose <strong>%s%d</strong>."},
 		{"You ruin a chill time and turn it into an unchill time, pay a fine of **%s%d**.", "You ruin a chill time and turn it into an unchill time, pay a fine of <strong>%s%d</strong>."},
@@ -260,7 +260,6 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		{"You pull your dick out for Harambe and gain **%s%d** for your service.", "You pull your dick out for Harambe and gain <strong>%s%d</strong> for your service."},
 		{"You did it for the Vine and got **%s%d**.", "You did it for the Vine and got <strong>%s%d</strong>."},
 		{"You say \"bork\" in a large crowd. Many assume you're homeless and donate **%s%d** to you.", "You say \"bork\" in a large crowd. Many assume you're homeless and donate <strong>%s%d</strong> to you."},
-		{"You vibe out to some penis music. An agent is so impressed he calls you at home and offers you a **%s%d** contract!", "You vibe out to some penis music. An agent is so impressed he calls you at home and offers you a <strong>%s%d</strong> contract!"},
 		{"You score 69420 on your favourite game, nice, have **%s%d**!", "You score 69420 on your favourite game, nice, have <strong>%s%d</strong>!"},
 		{"You find millions of peaches. Wow! Gain **%s%d**.", "You find millions of peaches. Wow! Gain <strong>%s%d</strong>."},
 		{"You spot a government surveilance drone and protect your privacy. Gain **%s%d** for your service.", "You spot a government surveilance drone and protect your privacy. Gain <strong>%s%d</strong> for your service."},
@@ -275,7 +274,6 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		{"You catch the covids and have to pay **%s%d** in medical expenses.", "You catch the covids and have to pay <strong>%s%d</strong> in medical expenses."},
 		{"You plank in public and take pictures, you pay in shame and **%s%d**.", "You plank in public and take pictures, you pay in shame and <strong>%s%d</strong>."},
 		{"A crowd of people gang up on you and claim that birds are in fact \"real\". You're beaten, and lose **%s%d**.", "A crowd of people gang up on you and claim that birds are in fact \"real\". You're beaten, and lose <strong>%s%d</strong>."},
-		{"You shout the N Word in an urban environment and get robbed for **%s%d**.", "You shout the N Word in an urban environment and get robbed for <strong>%s%d</strong>."},
 		{"You let your memes be dreams and lost **%s%d**.", "You let your memes be dreams and lost <strong>%s%d</strong>."},
 		{"You think you made a decent meme, but the mods delete it and take **%s%d** from you 😰.", "You think you made a decent meme, but the mods delete it and take <strong>%s%d</strong> from you 😰."},
 	}
