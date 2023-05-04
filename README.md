@@ -9,6 +9,8 @@ Changes happen rapidly, the spec is liquid. Solidified instances will be tagged 
 
 ## Instructions
 
+There's a getting started guide in [GettingStarted.md](./GettingStarted.md).
+
 Run the bot via `./tools/rundev.sh`. Note: This will also trigger `tools/updatelicense.py`, which is a recursive function.
 
 Build the plugins via `./tools/buildplugins.sh`. This will build all the plugins in the plugins directory.
