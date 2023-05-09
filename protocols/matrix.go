@@ -426,7 +426,7 @@ func (matrix *Matrix) SendFormattedText(to onelib.UUID, text, formattedText stri
 // recv should be called after you've recieved data and built a Message object
 func (matrix *Matrix) recv(msg onelib.Message, sender onelib.Sender) {
 	if string(sender.UUID()) != matrixAuthUser {
-		onelib.ProcessMessage(matrix.prefix, msg, sender)
+		onelib.ProcessMessage([]string{matrix.prefix}, msg, sender)
 	}
 }
 

@@ -270,7 +270,7 @@ func post(text string, reply *bsky.FeedPost_ReplyRef) error {
 	if len(urls) > 0 {
 		facets = make([]*bsky.RichtextFacet, len(urls))
 		for i, u := range urls {
-			// skip the entry if it's a mention (TODO: Handle mentions, don't actually mention, but link to profile)
+			// skip the entry if it's a mention
 			var out string
 			if u[0] > 0 && text[u[0]-1] == '@' {
 				out = "https://staging.bsky.app/profile/" + text[u[0]:u[1]]
@@ -436,8 +436,7 @@ func (bs *Bluesky) recv(stop chan bool) {
 
 			// Calling this twice for one message is bad practice. Maybe there should be a way to
 			// call ProcessMessage without triggering monitors twice.
-			onelib.ProcessMessage(bs.prefix, msg, sender)
-			onelib.ProcessMessage("@"+blueskyHandle+" ", msg, sender)
+			onelib.ProcessMessage([]string{bs.prefix, "@"+blueskyHandle+" ", "@"+blueskyHandle+" /"}, msg, sender)
 		}
 		lastCID = firstCID
 		time.Sleep(time.Duration(feedFreq) * time.Second)

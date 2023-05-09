@@ -110,15 +110,17 @@ func getcommand(prefix, line string) string {
 }
 
 // ProcessMessage processes command and monitor triggers, spawning a new goroutine for every trigger.
-func ProcessMessage(prefix string, msg Message, sender Sender) {
+func ProcessMessage(prefix []string, msg Message, sender Sender) {
 	text := msg.Text()
-	if len(text) > len(prefix) && string(text[:len(prefix)]) == prefix {
-		commandName := getcommand(prefix, text)
-		if command := Commands.Get(commandName); command != nil {
-			// Call command as goroutine, passing a copy of the message without the command call
-			go command(msg.StripPrefix(prefix+commandName), sender)
+	for _, p := range prefix {
+		if len(text) > len(p) && string(text[:len(p)]) == p {
+			commandName := getcommand(p, text)
+			if command := Commands.Get(commandName); command != nil {
+				// Call command as goroutine, passing a copy of the message without the command call
+				go command(msg.StripPrefix(p+commandName), sender)
 
-			return // TODO once command outputs are bridged, this line needs to be removed so the bridge can still bridge the call itself
+				return // TODO once command outputs are bridged, this line needs to be removed so the bridge can still bridge the call itself
+			}
 		}
 	}
 

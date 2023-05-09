@@ -235,7 +235,7 @@ func (dis *Discord) SendFormattedText(to onelib.UUID, text, formattedText string
 // recv should be called after you've recieved data and built a Message object
 func (dis *Discord) recv(msg onelib.Message, sender onelib.Sender) {
 	if string(sender.UUID()) != discordAuthUser {
-		onelib.ProcessMessage(dis.prefix, msg, sender)
+		onelib.ProcessMessage([]string{dis.prefix}, msg, sender)
 	}
 }
 

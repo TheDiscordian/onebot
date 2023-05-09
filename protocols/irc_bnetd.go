@@ -148,7 +148,7 @@ func (bp *BnetProtocol) SendFormattedText(to onelib.UUID, text, formattedText st
 
 // recv should be called after you've recieved data and built a Message object
 func (bp *BnetProtocol) recv(msg onelib.Message, sender onelib.Sender) {
-	onelib.ProcessMessage(bp.prefix, msg, sender)
+	onelib.ProcessMessage([]string{bp.prefix}, msg, sender)
 }
 
 // Remove should disconnect any open connections making it so the bot can forget about the protocol cleanly.
