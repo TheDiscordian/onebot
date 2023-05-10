@@ -175,6 +175,9 @@ func cute(msg onelib.Message, sender onelib.Sender) {
 		cuteMax = 245
 		cuteMin = 5
 	)
+	if strings.TrimSpace(msg.Text()) != "" {
+		return
+	}
 	cuteResponses := [][2]string{
 		{"You help Miles build robots and gain **%s%d**!", "You help Miles build robots and gain <strong>%s%d</strong>!"},
 		{"You go to a comedy show with Devin and gain **%s%d**!", "You go to a comedy show with Devin and gain <strong>%s%d</strong>!"},
@@ -215,6 +218,9 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		chillFineMin = 1
 		chillFail    = 3 // 1 in x of failure
 	)
+	if strings.TrimSpace(msg.Text()) != "" {
+		return
+	}
 	chillResponses := [][2]string{
 		{"Smoke weed with Snoop Dogg and gain **%s%d**!", "Smoke weed with Snoop Dogg and gain <strong>%s%d</strong>!"},
 		{"You play some 100%% Orange Juice with your friends. It's a good time, you gain **%s%d**.", "You play some 100%% Orange Juice with your friends. It's a good time, you gain <strong>%s%d</strong>."},
@@ -270,6 +276,9 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		memeFineMin = 5
 		memeFail    = 20 // 1 in x of failure
 	)
+	if strings.TrimSpace(msg.Text()) != "" {
+		return
+	}
 	memeResponses := [][2]string{
 		{"Dab on all them haters and gain **%s%d**!", "Dab on all them haters and gain <strong>%s%d</strong>!"},
 		{"You pull your dick out for Harambe and gain **%s%d** for your service.", "You pull your dick out for Harambe and gain <strong>%s%d</strong> for your service."},
@@ -306,6 +315,9 @@ func risk(msg onelib.Message, sender onelib.Sender) {
 		riskFail    = 2                // 1 in x of failure
 		riskTime    = time.Second * 61 // time until command can be called again
 	)
+	if strings.TrimSpace(msg.Text()) != "" {
+		return
+	}
 	riskResponses := [][2]string{
 		{"You bet your life savings on a horse race ... and win **%s%d**!", "You bet your life savings on a horse race ... and win <strong>%s%d</strong>!"},
 		{"You buy a lottery ticket and win **%s%d**!", "You buy a lottery ticket and win <strong>%s%d</strong>!"},
