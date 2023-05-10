@@ -27,16 +27,15 @@ const (
 
 // TODO command to assign a location to a currency location uuid. Allow it to only be unset by whoever set it.
 
-
 var (
 	// UserActionMap used for storing the last time an action was called
 	UserActionMap *userMap
 	// AliasConfirmMap stores aliases waiting to be confirmed, key is requester, val is target
 	AliasConfirmMap *aliasConfirmMap
 
-	cuteTime time.Duration
+	cuteTime  time.Duration
 	chillTime time.Duration
-	memeTime time.Duration
+	memeTime  time.Duration
 )
 
 // Load returns the Plugin object.
@@ -173,8 +172,8 @@ func performAction(uuid onelib.UUID, actionName, actionText string, actionMinPay
 
 func cute(msg onelib.Message, sender onelib.Sender) {
 	const (
-		cuteMax  = 245
-		cuteMin  = 5
+		cuteMax = 245
+		cuteMin = 5
 	)
 	cuteResponses := [][2]string{
 		{"You help Miles build robots and gain **%s%d**!", "You help Miles build robots and gain <strong>%s%d</strong>!"},
@@ -214,7 +213,7 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		chillMin     = 40
 		chillFineMax = 145
 		chillFineMin = 1
-		chillFail    = 3                // 1 in x of failure
+		chillFail    = 3 // 1 in x of failure
 	)
 	chillResponses := [][2]string{
 		{"Smoke weed with Snoop Dogg and gain **%s%d**!", "Smoke weed with Snoop Dogg and gain <strong>%s%d</strong>!"},
@@ -269,7 +268,7 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		memeMin     = 5
 		memeFineMax = 250
 		memeFineMin = 5
-		memeFail    = 20                // 1 in x of failure
+		memeFail    = 20 // 1 in x of failure
 	)
 	memeResponses := [][2]string{
 		{"Dab on all them haters and gain **%s%d**!", "Dab on all them haters and gain <strong>%s%d</strong>!"},

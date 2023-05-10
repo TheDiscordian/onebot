@@ -436,7 +436,7 @@ func (bs *Bluesky) recv(stop chan bool) {
 
 			// Calling this twice for one message is bad practice. Maybe there should be a way to
 			// call ProcessMessage without triggering monitors twice.
-			onelib.ProcessMessage([]string{bs.prefix, "@"+blueskyHandle+" ", "@"+blueskyHandle+" /"}, msg, sender)
+			onelib.ProcessMessage([]string{bs.prefix, "@" + blueskyHandle + " ", "@" + blueskyHandle + " /"}, msg, sender)
 		}
 		lastCID = firstCID
 		time.Sleep(time.Duration(feedFreq) * time.Second)
