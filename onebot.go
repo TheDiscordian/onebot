@@ -33,7 +33,7 @@ const (
 	// NAME is the default display name of the bot
 	NAME = "OneBot"
 	// VERSION is the displayed version of the bot
-	VERSION = "v0.0.3-unstable"
+	VERSION = "v0.0.4-wip"
 )
 
 /* DATABASE SPEC

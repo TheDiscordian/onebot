@@ -159,7 +159,6 @@ func unfollowUser(did string) error {
 	return err
 }
 
-// BUG: Only returns the 100 most recent follows
 func getFollowsMap() (followsMap map[string]bool, err error) {
 	auth := getAuthInfo()
 	xrpcc, err := getXrpcClient(auth)
@@ -167,20 +166,27 @@ func getFollowsMap() (followsMap map[string]bool, err error) {
 		return
 	}
 
-	// TODO: Use follows.Cursor in a loop to grab *all* follows (break if nil)
-	follows, err := bsky.GraphGetFollows(context.TODO(), xrpcc, blueskyHandle, "", 100)
-	if err != nil {
-		return
-	}
-	followsMap = make(map[string]bool, len(follows.Follows))
-	for _, f := range follows.Follows {
-		followsMap[f.Did] = true
+	followsMap = make(map[string]bool)
+
+	var cursor string
+	for {
+		follows, err := bsky.GraphGetFollows(context.TODO(), xrpcc, blueskyHandle, cursor, 100)
+		if err != nil {
+			return followsMap, err
+		}
+		for _, f := range follows.Follows {
+			followsMap[f.Did] = true
+		}
+		if follows.Cursor != nil {
+			cursor = *follows.Cursor
+		} else {
+			break
+		}
 	}
 
 	return
 }
 
-// BUG: Only returns the 100 most recent followers
 func getFollowersMap() (followersMap map[string]bool, err error) {
 	auth := getAuthInfo()
 	xrpcc, err := getXrpcClient(auth)
@@ -188,14 +194,22 @@ func getFollowersMap() (followersMap map[string]bool, err error) {
 		return
 	}
 
-	// TODO: Use followers.Cursor in a loop to grab *all* followers (break if nil)
-	followers, err := bsky.GraphGetFollowers(context.TODO(), xrpcc, blueskyHandle, "", 100)
-	if err != nil {
-		return
-	}
-	followersMap = make(map[string]bool, len(followers.Followers))
-	for _, f := range followers.Followers {
-		followersMap[f.Did] = true
+	followersMap = make(map[string]bool)
+
+	var cursor string
+	for {
+		followers, err := bsky.GraphGetFollowers(context.TODO(), xrpcc, blueskyHandle, cursor, 100)
+		if err != nil {
+			return followersMap, err
+		}
+		for _, f := range followers.Followers {
+			followersMap[f.Did] = true
+		}
+		if followers.Cursor != nil {
+			cursor = *followers.Cursor
+		} else {
+			break
+		}
 	}
 
 	return
