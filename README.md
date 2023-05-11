@@ -2,7 +2,7 @@
 
 I've open-sourced this code early, but it's still very much a work in progress. There be dragons ahead.
 
-## Version v0.0.3
+## Version v0.0.4-wip
 
 Changes happen rapidly, the spec is liquid. Solidified instances will be tagged for go module use.
 

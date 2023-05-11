@@ -91,14 +91,13 @@ func syncFollowers(stop chan bool) {
 				delete(follows, follower)
 			}
 		}
-		// See who we follow, but they don't follow us and unfollow them (WIP)
-		/*
-			for follow := range follows {
-				err = unfollowUser(follow)
-				if err != nil {
-					onelib.Error.Println("["+NAME+"] Error unfollowing user:", err)
-				}
-			}*/
+		// See who we follow, but they don't follow us and unfollow them
+		for follow := range follows {
+			err = unfollowUser(follow)
+			if err != nil {
+				onelib.Error.Println("["+NAME+"] Error unfollowing user:", err)
+			}
+		}
 		time.Sleep(time.Duration(followFreq) * time.Second)
 	}
 }
@@ -129,31 +128,38 @@ func followUser(did string) error {
 }
 
 func unfollowUser(did string) error {
-	/*auth := getAuthInfo()
+	auth := getAuthInfo()
 	xrpcc, err := getXrpcClient(auth)
 	if err != nil {
 		return err
 	}
 
-	follow := bsky.GraphFollow{
-		LexiconTypeID: "app.bsky.graph.follow",
-		CreatedAt:     time.Now().Format(time.RFC3339),
-		Subject:       did,
+	profile, err := bsky.ActorGetProfile(context.TODO(), xrpcc, did)
+	if err != nil {
+		return fmt.Errorf("Cannot get profile: %w", err)
 	}
 
-	err := atproto.RepoDeleteRecord(context.TODO(), xrpcc, &atproto.RepoDeleteRecord_Input{
-		Collection: "app.bsky.graph.follow",
-		Repo:       xrpcc.Auth.Did,
-		Record:     &lexutil.LexiconTypeDecoder{&follow},
-	})
-	if err != nil {
-		return err
-	}*/
-	// Not yet implmented
+	if profile.Viewer.Following == nil {
+		return fmt.Errorf("Cannot unfollow user '%s': already not following", did)
+	}
 
-	return nil
+	parts := strings.Split(*profile.Viewer.Following, "/")
+	if len(parts) < 3 {
+		return fmt.Errorf("Invalid post uri: %s", *profile.Viewer.Following)
+	}
+	rkey := parts[len(parts)-1]
+	schema := "app.bsky.graph.follow"
+
+	err = atproto.RepoDeleteRecord(context.TODO(), xrpcc, &atproto.RepoDeleteRecord_Input{
+		Repo:       xrpcc.Auth.Did,
+		Collection: schema,
+		Rkey:       rkey,
+	})
+
+	return err
 }
 
+// BUG: Only returns the 100 most recent follows
 func getFollowsMap() (followsMap map[string]bool, err error) {
 	auth := getAuthInfo()
 	xrpcc, err := getXrpcClient(auth)
@@ -161,6 +167,7 @@ func getFollowsMap() (followsMap map[string]bool, err error) {
 		return
 	}
 
+	// TODO: Use follows.Cursor in a loop to grab *all* follows (break if nil)
 	follows, err := bsky.GraphGetFollows(context.TODO(), xrpcc, blueskyHandle, "", 100)
 	if err != nil {
 		return
@@ -173,6 +180,7 @@ func getFollowsMap() (followsMap map[string]bool, err error) {
 	return
 }
 
+// BUG: Only returns the 100 most recent followers
 func getFollowersMap() (followersMap map[string]bool, err error) {
 	auth := getAuthInfo()
 	xrpcc, err := getXrpcClient(auth)
@@ -180,6 +188,7 @@ func getFollowersMap() (followersMap map[string]bool, err error) {
 		return
 	}
 
+	// TODO: Use followers.Cursor in a loop to grab *all* followers (break if nil)
 	followers, err := bsky.GraphGetFollowers(context.TODO(), xrpcc, blueskyHandle, "", 100)
 	if err != nil {
 		return
