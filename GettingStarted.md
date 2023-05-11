@@ -5,6 +5,7 @@ This is a quick guide on how to get OneBot running on a Linux PC/VPS.
 ## Requirements
 
 - A Linux OS
+- make
 - gcc
 - git
 - Go (>=v1.11, newer the better)
@@ -110,7 +111,8 @@ After config running the bot should be pretty straightforward:
 
 ```bash
 cd ~/onebot
-./tools/rundev.sh
+make build # build the bot
+make run # run the bot
 ```
 
 This will rebuild OneBot and all it's plugins, then run the bot. If you're looking to have it run longer than just your current shell session, install `tmux` (on debian this is `sudo apt install tmux`), ensure the bot isn't running, then try this process:
@@ -118,7 +120,8 @@ This will rebuild OneBot and all it's plugins, then run the bot. If you're looki
 ```bash
 tmux
 cd ~/onebot
-./tools/rundev.sh
+make build # build the bot
+make run # run the bot
 CTRL+b, d
 ```
 

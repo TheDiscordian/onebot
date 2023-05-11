@@ -11,8 +11,12 @@ Changes happen rapidly, the spec is liquid. Solidified instances will be tagged 
 
 There's a getting started guide in [GettingStarted.md](./GettingStarted.md).
 
-Run the bot via `./tools/rundev.sh`. Note: This will also trigger `tools/updatelicense.py`, which is a recursive function.
+Build the bot with `make build`.
 
-Build the plugins via `./tools/buildplugins.sh`. This will build all the plugins in the plugins directory.
+Run the bot with `make run`.
 
-Check code correctness via `./tools/checkcode.sh`. Note: This tool outputs suggestions, make sure to ask before making changes to already comitted code based on these guidelines.
+Build everything and run with `make dev`. Note: This will also trigger `tools/updatelicense.py`, which is a recursive function.
+
+Build the plugins via `make plugins` and `make protocols`. This will build all the plugins in the plugins directory, and all the protocol plugins in the protocols directory.
+
+Check code correctness via `make check`. Note: This tool outputs suggestions, make sure to ask before making changes to already comitted code based on these guidelines.
