@@ -226,7 +226,7 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		{"You play some 100%% Orange Juice with your friends. It's a good time, you gain **%s%d**.", "You play some 100%% Orange Juice with your friends. It's a good time, you gain <strong>%s%d</strong>."},
 		{"You roll a bad blunt, but Snoop Dogg is too high to notice! Good job, have **%s%d**!", "You roll a bad blunt, but Snoop Dogg is too high to notice! Good job, have <strong>%s%d</strong>!"},
 		{"You drop acid and experience another reality. You gain **%s%d**.", "You drop acid and experience another reality. You gain <strong>%s%d</strong>."},
-		{"You fuck your friend's mother and she pays YOU **%s%d**!", "You fuck your friend's mother and she pays YOU <strong>%s%d</strong>!"},
+		{"You sleep with your friend's mother and she pays YOU **%s%d**!", "You sleep with your friend's mother and she pays YOU <strong>%s%d</strong>!"},
 		{"The weed hit you just right, gain **%s%d**!", "The weed hit you just right, gain <strong>%s%d</strong>!"},
 		{"You shoot up some scrubs in an FPS and gain **%s%d**.", "You shoot up some scrubs in an FPS and gain <strong>%s%d</strong>."},
 		{"You vibe out and listen to some music. After a while you gain **%s%d**.", "You vibe out and listen to some music. After a while you gain <strong>%s%d</strong>."},
@@ -244,12 +244,13 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		{"You found a nugget of weed you forgot about, awesome! Gain **%s%d**.", "You found a nugget of weed you forgot about, awesome! Gain <strong>%s%d</strong>."},
 		{"Turns out you had more beer than you thought in the back of the fridge, cool! Gain **%s%d**.", "Turns out you had more beer than you thought in the back of the fridge, cool! Gain <strong>%s%d</strong>."},
 		{"You find some spare coils for your vape you forgot about, score! Gain **%s%d**.", "You find some spare coils for your vape you forgot about, score! Gain <strong>%s%d</strong>."},
+		{"You take some shrooms and bond with your friends, gain **%s%d**.", "You take some shrooms and bond with your friends, gain <strong>%s%d</strong>."},
 	}
 	chillNegativeResponses := [][2]string{
 		{"You roll a bad blunt and Snoop Dogg notices, pay a fine of **%s%d**...", "You roll a bad blunt and Snoop Dogg notices, pay a fine of <strong>%s%d</strong>..."},
 		{"You play some 100%% Orange Juice with your friends. You come in last and lose **%s%d**.", "You play some 100%% Orange Juice with your friends. You come in last and lose <strong>%s%d</strong>."},
 		{"You have a bad trip and end up sleeping with your friend's mother. Pay a fine of **%s%d**.", "You have a bad trip and end up sleeping with your friend's mother. Pay a fine of <strong>%s%d</strong>."},
-		{"You fuck your friend's mother, but you don't perform very well and she charges you **%s%d** for the inconvenience.", "You fuck your friend's mother, but you don't perform very well and she charges you <strong>%s%d</strong> for the inconvenience."},
+		{"You sleep with your friend's mother, but you don't perform very well and she charges you **%s%d** for the inconvenience.", "You sleep with your friend's mother, but you don't perform very well and she charges you <strong>%s%d</strong> for the inconvenience."},
 		{"You play some Monopoly and the cold hard reality of capitalism sets in... you lose **%s%d**.", "You play some Monopoly and the cold hard reality of capitalism sets in... you lose <strong>%s%d</strong>."},
 		{"You ruin a chill time and turn it into an unchill time, pay a fine of **%s%d**.", "You ruin a chill time and turn it into an unchill time, pay a fine of <strong>%s%d</strong>."},
 		{"You go to fill your bowl, but spill all your weed costing you **%s%d** 💔.", "You go to fill your bowl, but spill all your weed costing you <strong>%s%d</strong> 💔."},
@@ -262,6 +263,7 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		{"You run out of weed! You pay in sadness and **%s%d** 😞.", "You run out of weed! You pay in sadness and <strong>%s%d</strong> 😞."},
 		{"You run out of beer! You throw up and pay **%s%d** to people for taking care of your drunk ass.", "You run out of beer! You throw up and pay <strong>%s%d</strong> to people for taking care of your drunk ass."},
 		{"You take a dry hit from your vape and lose **%s%d**.", "You take a dry hit from your vape and lose <strong>%s%d</strong>."},
+		{"You take too many shrooms and run into the woods so a search team has to be dispatched to find you. They charge you **%s%d** for the service.", "You take too many shrooms and run into the woods so a search team has to be dispatched to find you. They charge you <strong>%s%d</strong> for the service."}
 	}
 	text, formattedText := performAction(sender.UUID(), "chill", "chill", chillMin, chillMax, chillFineMin, chillFineMax, chillFail, chillResponses, chillNegativeResponses, chillTime)
 	sender.Location().SendFormattedText(text, formattedText)
