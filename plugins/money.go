@@ -263,7 +263,7 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		{"You run out of weed! You pay in sadness and **%s%d** 😞.", "You run out of weed! You pay in sadness and <strong>%s%d</strong> 😞."},
 		{"You run out of beer! You throw up and pay **%s%d** to people for taking care of your drunk ass.", "You run out of beer! You throw up and pay <strong>%s%d</strong> to people for taking care of your drunk ass."},
 		{"You take a dry hit from your vape and lose **%s%d**.", "You take a dry hit from your vape and lose <strong>%s%d</strong>."},
-		{"You take too many shrooms and run into the woods so a search team has to be dispatched to find you. They charge you **%s%d** for the service.", "You take too many shrooms and run into the woods so a search team has to be dispatched to find you. They charge you <strong>%s%d</strong> for the service."}
+		{"You take too many shrooms and run into the woods so a search team has to be dispatched to find you. They charge you **%s%d** for the service.", "You take too many shrooms and run into the woods so a search team has to be dispatched to find you. They charge you <strong>%s%d</strong> for the service."},
 	}
 	text, formattedText := performAction(sender.UUID(), "chill", "chill", chillMin, chillMax, chillFineMin, chillFineMax, chillFail, chillResponses, chillNegativeResponses, chillTime)
 	sender.Location().SendFormattedText(text, formattedText)
