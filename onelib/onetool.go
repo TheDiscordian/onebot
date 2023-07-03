@@ -145,24 +145,24 @@ func ProcessMessage(prefix []string, msg Message, sender Sender) {
 	mons := Monitors.Get()
 	for _, mon := range mons {
 		if mon.OnMessage != nil {
-			go func() {
+			go func(mon *Monitor) {
 				defer func() {
 					if r := recover(); r != nil {
 						Error.Println("panic:", string(debug.Stack()))
 					}
 				}()
 				mon.OnMessage(sender, msg)
-			}()
+			}(mon)
 		}
 		if len(text) > 0 && mon.OnMessageWithText != nil {
-			go func() {
+			go func(mon *Monitor) {
 				defer func() {
 					if r := recover(); r != nil {
 						Error.Println("panic:", string(debug.Stack()))
 					}
 				}()
 				mon.OnMessageWithText(sender, msg)
-			}()
+			}(mon)
 		}
 	}
 
