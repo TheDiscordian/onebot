@@ -1,0 +1,20 @@
+{"ipfs": [
+	"https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/concepts/what-is-ipfs.md",
+	"https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/concepts/ipfs-solves.md",
+	"https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/concepts/how-ipfs-works.md",
+	"https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/concepts/lifecycle.md",
+	"https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/concepts/faq.md",
+	"https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/install/ipfs-companion.md",
+	"https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/install/ipfs-desktop.md"
+],
+"helia": [
+	"https://raw.githubusercontent.com/wiki/ipfs/helia/Manifesto.md",
+	"https://raw.githubusercontent.com/wiki/ipfs/helia/FAQ.md",
+	"https://raw.githubusercontent.com/wiki/ipfs/helia/Branding.md",
+	"https://raw.githubusercontent.com/wiki/ipfs/helia/Meta.md",
+	"https://raw.githubusercontent.com/ipfs-examples/helia-examples/main/examples/helia-101/README.md",
+	"https://raw.githubusercontent.com/ipfs-examples/helia-examples/main/examples/helia-101/101-basics.js",
+	"https://raw.githubusercontent.com/ipfs-examples/helia-examples/main/examples/helia-101/201-storage.js",
+	"https://raw.githubusercontent.com/ipfs-examples/helia-examples/main/examples/helia-101/301-networking.js",
+	"https://github.com/ipfs/helia/wiki/Migrating-from-js-IPFS.md"
+]}
