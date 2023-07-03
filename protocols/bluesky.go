@@ -272,15 +272,14 @@ func createSession(handle, password string) error {
 	}
 
 	err = onelib.Db.PutString(DB_TABLE, "auth_json", string(b))
-	onelib.Debug.Println(string(b))
 	return nil
 }
 
-func post(text string, reply *bsky.FeedPost_ReplyRef) error {
+func post(text string, reply *bsky.FeedPost_ReplyRef) (string, string, error) {
 	auth := getAuthInfo()
 	xrpcc, err := getXrpcClient(auth)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
 	// reformat the text
@@ -319,7 +318,7 @@ func post(text string, reply *bsky.FeedPost_ReplyRef) error {
 		}
 	}
 
-	_, err = atproto.RepoCreateRecord(context.TODO(), xrpcc, &atproto.RepoCreateRecord_Input{
+	resp, err := atproto.RepoCreateRecord(context.TODO(), xrpcc, &atproto.RepoCreateRecord_Input{
 		Collection: "app.bsky.feed.post",
 		Repo:       auth.Did,
 		Record: &lexutil.LexiconTypeDecoder{&bsky.FeedPost{
@@ -330,13 +329,13 @@ func post(text string, reply *bsky.FeedPost_ReplyRef) error {
 		}},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create post: %w", err)
+		return "", "", fmt.Errorf("failed to create post: %w", err)
 	}
 
 	//fmt.Println(resp.Cid)
 	//fmt.Println(resp.Uri)
 
-	return nil
+	return resp.Uri, resp.Cid, nil
 }
 
 func getFeed(count int64) ([]*bsky.FeedDefs_FeedViewPost, error) {
@@ -457,8 +456,6 @@ func (bs *Bluesky) recv(stop chan bool) {
 				location: location,
 			}
 
-			// Calling this twice for one message is bad practice. Maybe there should be a way to
-			// call ProcessMessage without triggering monitors twice.
 			onelib.ProcessMessage([]string{bs.prefix, "@" + blueskyHandle + " ", "@" + blueskyHandle + " /"}, msg, sender)
 		}
 		lastCID = firstCID
@@ -545,7 +542,7 @@ func (bs *bskySender) Send(msg onelib.Message) {
 }
 
 func (bs *bskySender) SendText(text string) {
-	err := post("@"+bs.handle+" "+text, nil)
+	_, _, err := post("@"+bs.handle+" "+text, nil)
 	if err != nil {
 		onelib.Error.Printf("[%s] Error posting message: %s\n", NAME, err)
 	}
@@ -588,11 +585,44 @@ func (bl *bskyLocation) SendText(text string) {
 	} else {
 		root = &atproto.RepoStrongRef{Cid: bl.msg.cid, Uri: bl.msg.uri}
 	}
-	post(text,
-		&bsky.FeedPost_ReplyRef{
-			Parent: &atproto.RepoStrongRef{Cid: bl.msg.cid, Uri: bl.msg.uri},
-			Root:   root,
-		})
+
+	// If text is over 300 characters, break it up by word into multiple posts
+	if len(text) > 300 {
+		words := strings.Fields(text)
+		text = ""
+		last_uri := bl.msg.uri
+		last_cid := bl.msg.cid
+		for _, word := range words {
+			if len(text)+len(word)+1 > 300 {
+				var err error
+				last_uri, last_cid, err = post(strings.TrimSpace(text),
+					&bsky.FeedPost_ReplyRef{
+						Parent: &atproto.RepoStrongRef{Cid: last_cid, Uri: last_uri},
+						Root:   root,
+					})
+				if err != nil {
+					onelib.Error.Printf("[%s] Error posting message: %s\n", NAME, err)
+					return
+				}
+				text = ""
+				time.Sleep(time.Second * 2)
+			}
+			text += word + " "
+		}
+		if len(text) > 0 {
+			post(strings.TrimSpace(text),
+				&bsky.FeedPost_ReplyRef{
+					Parent: &atproto.RepoStrongRef{Cid: last_cid, Uri: last_uri},
+					Root:   root,
+				})
+		}
+	} else {
+		post(text,
+			&bsky.FeedPost_ReplyRef{
+				Parent: &atproto.RepoStrongRef{Cid: bl.msg.cid, Uri: bl.msg.uri},
+				Root:   root,
+			})
+	}
 }
 
 func (bl *bskyLocation) SendFormattedText(text, formattedText string) {
