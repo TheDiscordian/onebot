@@ -5,7 +5,6 @@ package main
 import (
 	"strings"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"io"
 	"os/exec"
@@ -47,35 +46,22 @@ func Load() onelib.Plugin {
 		}
 	}
 
-	// Load OpenAI key from plugins/qa/openaikey.txt
-	key_file, err := os.Open("plugins/qa/openaikey.txt")
-	if err != nil {
-		onelib.Error.Println("Error opening plugins/qa/openaikey.txt:", err)
+	qa.openaiKey = onelib.GetTextConfig(NAME, "openai_key")
+	if qa.openaiKey == "" {
+		onelib.Error.Println("[qa] openai_key can't be blank.")
 		return nil
 	}
-	defer key_file.Close()
-	// Read entire file into qa.openaiKey, then trim whitespace
-	key, err := ioutil.ReadAll(key_file)
-	if err != nil {
-		onelib.Error.Println("Error reading openaikey.txt:", err)
-		return nil
-	}
-	qa.openaiKey = strings.TrimSpace(string(key))
 
-	// Load prompt from plugins/qa/prompt.txt
-	prompt_file, err := os.Open("plugins/qa/prompt.txt")
+	qa.prompt = onelib.GetTextConfig(NAME, "prompt")
+
+	// channelsJson is in the format: {"protocol": ["channel1", "channel2"]}
+	channelsJson := onelib.GetTextConfig(NAME, "channels")
+	qa.channels = make(map[string][]string)
+	err = json.Unmarshal([]byte(channelsJson), &qa.channels)
 	if err != nil {
-		onelib.Error.Println("Error opening prompt.txt:", err)
+		onelib.Error.Println("[qa] Error decoding channels:", err)
 		return nil
 	}
-	defer prompt_file.Close()
-	// Read entire file into qa.prompt, then trim whitespace
-	prompt, err := ioutil.ReadAll(prompt_file)
-	if err != nil {
-		onelib.Error.Println("Error reading prompt.txt:", err)
-		return nil
-	}
-	qa.prompt = strings.TrimSpace(string(prompt))
 
 	// TODO Currently these run every time, which takes a long time, and costs some money. We should
 	// instead have a goroutine check if the file is updated, if so, then do some updates instead of
@@ -103,6 +89,7 @@ type QAPlugin struct {
 	expertise []string
 	openaiKey string
 	prompt string
+	channels map[string][]string
 }
 
 func (qa *QAPlugin) runqa(args ...string) (string, error) {
@@ -144,6 +131,23 @@ func (qa *QAPlugin) Version() string {
 }
 
 func (qa *QAPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
+	// Check if the message is in a channel we're monitoring
+	channel := from.Location().UUID()
+	proto := from.Protocol()
+	if _, ok := qa.channels[proto]; !ok {
+		return
+	}
+	found := false
+	for _, v := range qa.channels[proto] {
+		if v == "*" || onelib.UUID(v) == channel {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return
+	}
+
 	txt := strings.ToLower(msg.Text())
 	// Check if txt contains any of the strings in qa.expertise, and ends in a question mark
 	for _, v := range qa.expertise {
