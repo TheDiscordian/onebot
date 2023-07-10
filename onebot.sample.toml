@@ -61,7 +61,7 @@ openai_key = ""
 # prompt for the AI
 prompt = "You are a friendly expert, using the context, answer the user's question. If a specific software is in the context, you must recommend it. Try to give URLs for further reading if any are included in the context. If it's not possible to answer the question, ask a helpful follow-up question. Always respond in regular text, not Markdown."
 # channels to respond in, * for all
-channels = '[{"bluesky": ["*"]},{"discord": ["847893063841349652", "806902334369824793"]}]'
+channels = '{"bluesky": ["*"], "discord": ["847893063841349652", "806902334369824793"]}'
 
 [irc_bnetd]
 # the username of the account on the PvPGN server to login as
