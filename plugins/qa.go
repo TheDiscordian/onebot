@@ -131,6 +131,10 @@ func (qa *QAPlugin) Version() string {
 }
 
 func (qa *QAPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
+	if from.Self() {
+		return // Don't process msg if it's from ourselves
+	}
+
 	// Check if the message is in a channel we're monitoring
 	channel := from.Location().UUID()
 	proto := from.Protocol()
