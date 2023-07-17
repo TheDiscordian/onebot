@@ -368,7 +368,6 @@ type Bluesky struct {
 	stop     chan bool
 
 	seenPosts map[string]bool
-	me        onelib.UUID
 }
 
 // Name returns the name of the plugin, usually the filename.
