@@ -306,6 +306,7 @@ type Sender interface {
 	// Picture // TODO The avatar of the sender
 	Location() Location                           // The location where this sender sent the message from
 	Protocol() string                             // Returns the protocol name responsible for the sender
+	Self() bool                                   // Returns true if the sender is the bot
 	Send(msg Message)                             // Sends a Message to the sender
 	SendText(text string)                         // Sends text to the sender
 	SendFormattedText(text, formattedText string) // Sends formatted text to the sender (correctness might vary between protocols)

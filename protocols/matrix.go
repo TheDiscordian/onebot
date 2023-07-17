@@ -247,6 +247,10 @@ type matrixSender struct {
 	uuid                  onelib.UUID
 }
 
+func (ms *matrixSender) Self() bool {
+	return ms.uuid == onelib.UUID(matrixAuthUser)
+}
+
 func (ms *matrixSender) DisplayName() string {
 	return ms.displayName
 }

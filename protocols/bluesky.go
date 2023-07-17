@@ -35,6 +35,8 @@ var (
 	feedCount       int
 	feedFreq        int
 	followFreq      int
+
+	blueskyDid onelib.UUID
 )
 
 func loadConfig() {
@@ -266,6 +268,8 @@ func createSession(handle, password string) error {
 		return err
 	}
 
+	blueskyDid = onelib.UUID(ses.Did)
+
 	b, err := json.Marshal(ses)
 	if err != nil {
 		return err
@@ -364,6 +368,7 @@ type Bluesky struct {
 	stop     chan bool
 
 	seenPosts map[string]bool
+	me        onelib.UUID
 }
 
 // Name returns the name of the plugin, usually the filename.
@@ -515,6 +520,10 @@ type bskySender struct {
 	handle   string
 	location *bskyLocation
 	did      string
+}
+
+func (bs *bskySender) Self() bool {
+	return onelib.UUID(bs.did) == blueskyDid
 }
 
 func (bs *bskySender) DisplayName() string {

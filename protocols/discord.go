@@ -26,6 +26,9 @@ var (
 	discordAuthToken string
 	// discordAdminId is the UUID of the admin of the bot. This should probably be an array
 	discordAdminId string
+
+	// our userID
+	discordId onelib.UUID
 )
 
 func loadConfig() {
@@ -108,7 +111,17 @@ func Load() onelib.Protocol {
 		discordSession.update(msg, sender)
 	})
 
-	discordSession.client.Open()
+	// Add a handler for the Ready event
+	client.AddHandlerOnce(func(s *discordgo.Session, r *discordgo.Ready) {
+		// Retrieve the user ID
+		discordId = onelib.UUID(r.User.ID)
+	})
+
+	err = discordSession.client.Open()
+	if err != nil {
+		onelib.Error.Panicln(err)
+		return nil
+	}
 
 	return onelib.Protocol(discordSession)
 }
@@ -150,6 +163,10 @@ type discordSender struct {
 	displayName, username string
 	location              *discord.DiscordLocation
 	uuid                  onelib.UUID
+}
+
+func (ms *discordSender) Self() bool {
+	return ms.uuid == discordId
 }
 
 func (ms *discordSender) DisplayName() string {

@@ -208,6 +208,10 @@ type bnetSender struct {
 	uuid        onelib.UUID
 }
 
+func (bs *bnetSender) Self() bool {
+	return bs.uuid == onelib.UUID(bnetNick)
+}
+
 func (bs *bnetSender) DisplayName() string {
 	return bs.displayName
 }
