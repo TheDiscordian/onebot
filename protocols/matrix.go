@@ -212,6 +212,10 @@ type matrixMessage struct {
 	formattedText, text string
 }
 
+func (mm *matrixMessage) Mentioned() bool {
+	return strings.Contains(mm.formattedText, matrixAuthUser)
+}
+
 func (mm *matrixMessage) UUID() onelib.UUID {
 	onelib.Debug.Printf("[%s] Message UUIDs not yet supported.\n", NAME)
 	return onelib.UUID("")

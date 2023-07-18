@@ -287,6 +287,7 @@ type Message interface {
 	StripPrefix(prefix string) Message // Returns a copy of the message with `prefix + commandName + " "` stripped (Ex: "!say Hello" becomes "Hello")
 	Raw() []byte                       // The raw data received
 	UUID() UUID                        // Unique identifier for the message (can be empty)
+	Mentioned() bool                   // True if the bot was mentioned in the message
 	Reaction() *Emoji                  // Returns an emoji that was either added or removed, or nil if none
 	// Reactions() []Reaction // TODO The reactions on the message
 }

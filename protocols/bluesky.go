@@ -438,12 +438,34 @@ func (bs *Bluesky) recv(stop chan bool) {
 
 			reply := item.Reply
 
+			mentioned := false
+			// TODO check if reply is to a post we made, and consider that a mention
+
+			for _, facet := range post.Record.Val.(*bsky.FeedPost).Facets {
+				if facet == nil {
+					continue
+				}
+				for _, feature := range facet.Features {
+					if feature == nil || feature.RichtextFacet_Mention == nil {
+						continue
+					}
+					if onelib.UUID(feature.RichtextFacet_Mention.Did) == blueskyDid {
+						mentioned = true
+						break
+					}
+				}
+				if mentioned {
+					break
+				}
+			}
+
 			msg := &bskyMessage{
 				bskyPost: &bskyPost{
 					cid: post.Cid,
 					uri: post.Uri,
 				},
 				text: post.Record.Val.(*bsky.FeedPost).Text,
+				mentioned: mentioned,
 			}
 			if reply != nil && reply.Root != nil {
 				msg.root = &bskyPost{
@@ -484,6 +506,8 @@ type bskyMessage struct {
 	root *bskyPost
 	// text of the post (may be empty)
 	text string
+	// whether or not we were mentioned in the post
+	mentioned bool
 }
 
 func (bm *bskyMessage) UUID() onelib.UUID {
@@ -508,6 +532,10 @@ func (bm *bskyMessage) StripPrefix(prefix string) onelib.Message {
 		prefix = prefix + " "
 	}
 	return onelib.Message(&bskyMessage{text: strings.Replace(bm.text, prefix, "", 1)})
+}
+
+func (bm *bskyMessage) Mentioned() bool {
+	return bm.mentioned
 }
 
 func (bm *bskyMessage) Raw() []byte {

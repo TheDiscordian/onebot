@@ -162,6 +162,10 @@ type bnetMessage struct {
 	text string
 }
 
+func (bm *bnetMessage) Mentioned() bool {
+	return strings.Contains(bm.text, bnetNick)
+}
+
 func (bm *bnetMessage) UUID() onelib.UUID {
 	onelib.Debug.Printf("[%s] Message UUIDs not supported.\n", NAME)
 	return onelib.UUID("")

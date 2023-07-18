@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/TheDiscordian/onebot/libs/discord"
@@ -61,6 +62,17 @@ func Load() onelib.Protocol {
 			msg := &discordMessage{text: m.Content, id: onelib.UUID(m.ID)}
 			dc := &discord.DiscordClient{Session: client}
 			dl := &discord.DiscordLocation{Client: dc, Uuid: onelib.UUID(m.ChannelID), GuildID: onelib.UUID(m.GuildID)}
+
+			// Check if we were mentioned
+			if strings.Contains(m.Content, fmt.Sprintf("<@%s>", string(discordId))) {
+				msg.mentioned = true
+			} else { // Check if we were replied to
+				originalMessage, err := s.ChannelMessage(m.ChannelID, m.MessageReference.MessageID) // TODO: Check if this is an API call each time, if so, maybe we should cache msgs
+				if err == nil && originalMessage.Author.ID == string(discordId) {
+					msg.mentioned = true
+				}
+			}
+
 			if m.Member != nil && m.Member.Nick != "" {
 				displayName = m.Member.Nick
 			} else if m.Author != nil {
@@ -130,6 +142,11 @@ type discordMessage struct {
 	id                  onelib.UUID
 	formattedText, text string
 	emoji               *onelib.Emoji
+	mentioned           bool
+}
+
+func (mm *discordMessage) Mentioned() bool {
+	return mm.mentioned
 }
 
 func (mm *discordMessage) UUID() onelib.UUID {
