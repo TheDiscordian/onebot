@@ -24,6 +24,8 @@ const (
 // Load returns the Plugin object.
 func Load() onelib.Plugin {
 	qa := new(QAPlugin)
+	qa.replyToQuestions = onelib.GetBoolConfig(NAME, "reply_to_questions")
+	qa.replyToMentions = onelib.GetBoolConfig(NAME, "reply_to_mentions")
 	// Load expertise from expertise.json, which contains a string map where the values are arrays of strings. Store just the keys in qa.expertise
 	expertise_file, err := os.Open("plugins/qa/expertise.json")
 	if err != nil {
@@ -90,6 +92,9 @@ type QAPlugin struct {
 	openaiKey string
 	prompt string
 	channels map[string][]string
+
+	replyToQuestions bool
+	replyToMentions bool
 }
 
 func (qa *QAPlugin) runqa(args ...string) (string, error) {
@@ -152,13 +157,23 @@ func (qa *QAPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
 		return
 	}
 
+	ask := false
 	txt := strings.ToLower(msg.Text())
-	// Check if txt contains any of the strings in qa.expertise, and ends in a question mark
-	for _, v := range qa.expertise {
-		if strings.Contains(txt, v) && strings.HasSuffix(txt, "?") {
-			qa.ask_question(msg, from)
-			break
+	if qa.replyToMentions && msg.Mentioned() {
+		ask = true
+	}
+	if !ask && qa.replyToQuestions {
+		// Check if txt contains any of the strings in qa.expertise, and ends in a question mark
+		for _, v := range qa.expertise {
+			if strings.Contains(txt, v) && strings.HasSuffix(txt, "?") {
+				ask = true
+				break
+			}
 		}
+	}
+
+	if ask {
+		qa.ask_question(msg, from)
 	}
 }
 

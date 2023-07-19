@@ -63,6 +63,12 @@ prompt = "You are a friendly expert, using the context, answer the user's questi
 # channels to respond in, * for all
 channels = '{"bluesky": ["*"], "discord": ["847893063841349652", "806902334369824793"]}'
 
+# NOTE: if both options below are false, bot will never respond
+# if true, will respond to all questions which include at least one expertise and ends in a question mark
+reply_to_questions = true
+# if true, will respond to all replys and mentions
+reply_to_mentions = true
+
 [irc_bnetd]
 # the username of the account on the PvPGN server to login as
 nick = "OneBot"
