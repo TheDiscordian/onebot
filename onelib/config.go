@@ -4,6 +4,7 @@ package onelib
 
 import (
 	"fmt"
+	"strconv"
 	"github.com/pelletier/go-toml"
 )
 
@@ -18,6 +19,21 @@ func GetTextConfig(plugin, key string) string {
 		return cfg.(string)
 	}
 	return ""
+}
+
+// GetBoolConfig returns a config value, checking the DB first, expecting a boolean.
+func GetBoolConfig(plugin, key string) bool {
+	if txt, _ := Db.GetString(plugin, key); txt != "" {
+		b, err := strconv.ParseBool(txt)
+		if err != nil {
+			return false
+		}
+		return b
+	}
+	if cfg := config.Get(fmt.Sprintf("%s.%s", plugin, key)); cfg != nil {
+		return cfg.(bool)
+	}
+	return false
 }
 
 // GetIntConfig returns a config value, checking the DB first, expecting an int.
