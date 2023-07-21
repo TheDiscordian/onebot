@@ -8,7 +8,7 @@ This is a quick guide on how to get OneBot running on a Linux PC/VPS.
 - make
 - gcc
 - git
-- Go (>=v1.13, newer the better)
+- Go (>=v1.20)
 - Python3
 
 As OneBot doesn't currently have binaries, this guide will tell you how to get it compiled and running. It usually takes under 1min to compile after the first time, and under 5mins the first time. If you need this process to be faster please [open an issue](https://github.com/TheDiscordian/onebot/issues/new), it can be made much faster.
