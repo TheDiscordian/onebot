@@ -3,12 +3,16 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"encoding/json"
 	"os"
+	"time"
 	"io"
 	"os/exec"
+	"sync"
 
+	"github.com/TheDiscordian/onebot/libs/discord"
 	"github.com/TheDiscordian/onebot/onelib"
 )
 
@@ -65,24 +69,43 @@ func Load() onelib.Plugin {
 		return nil
 	}
 
-	// TODO Currently these run every time, which takes a long time, and costs some money. We should
-	// instead have a goroutine check if the file is updated, if so, then do some updates instead of
-	// the whole thing.
-	_, err = qa.runqa("db")
-	if err != nil {
-		onelib.Error.Println("Error downloading db:", err)
-		return nil
-	}
-	_, err = qa.runqa("aidb")
-	if err != nil {
-		onelib.Error.Println("Error updating aidb:", err)
-		return nil
+	updateDbs := onelib.GetBoolConfig(NAME, "update_databases")
+	if updateDbs {
+		// TODO Currently these run every time, which takes a long time, and costs some money. We should
+		// instead have a goroutine check if the file is updated, if so, then do some updates instead of
+		// the whole thing.
+		_, err = qa.runqa("db")
+		if err != nil {
+			onelib.Error.Println("Error downloading db:", err)
+			return nil
+		}
+		_, err = qa.runqa("aidb")
+		if err != nil {
+			onelib.Error.Println("Error updating aidb:", err)
+			return nil
+		}
 	}
 
 	qa.monitor = &onelib.Monitor{
 		OnMessageWithText: qa.OnMessageWithText,
+		OnMessageUpdate: qa.OnMessageUpdate,
 	}
+
+	qa.DbLock = new(sync.RWMutex)
 	return qa
+}
+
+type QuestionIndex struct {
+	Ids []onelib.UUID // The IDs of the responses
+}
+
+type QuestionAnswer struct {
+	Id        onelib.UUID `bson:"_id"` // The ID of the response
+	Answer    string      `bson:"a"`   // The answer to the question
+	Question  string      `bson:"q"`   // The question asked (can be blank)
+	UpVotes   int         `bson:"u"`   // The number of upvotes the answer has
+	DownVotes int         `bson:"d"`   // The number of downvotes the answer has
+	Date      int64	      `bson:"D"`   // The date the answer was posted
 }
 
 // QAPlugin is an object for satisfying the Plugin interface.
@@ -95,6 +118,10 @@ type QAPlugin struct {
 
 	replyToQuestions bool
 	replyToMentions bool
+
+	lastMsg string
+
+	DbLock *sync.RWMutex
 }
 
 func (qa *QAPlugin) runqa(args ...string) (string, error) {
@@ -117,7 +144,44 @@ func (qa *QAPlugin) ask_question(msg onelib.Message, sender onelib.Sender) {
 		return
 	}
 	onelib.Debug.Println("Replying:", txt)
+	qa.lastMsg = txt
 	sender.Location().SendText(txt)
+}
+
+func (qa *QAPlugin) stats(msg onelib.Message, sender onelib.Sender) {
+	now := time.Now()
+	var yearMonth string
+	if msg.Text() != "" {
+		yearMonth = strings.TrimSpace(msg.Text())
+	} else {
+		yearMonth = fmt.Sprintf("%d-%d", now.Year(), now.Month())
+	}
+	indexKey := fmt.Sprintf("%s-index", yearMonth)
+	qa.DbLock.RLock()
+
+	// Get the index
+	var index QuestionIndex
+	err := onelib.Db.GetObj(NAME, indexKey, &index)
+	if err != nil {
+		sender.Location().SendText(fmt.Sprintf("No stats found for %s.", yearMonth))
+		return
+	}
+	answers := 0
+	totalUpvotes := 0
+	totalDownvotes := 0
+	for _, id := range index.Ids {
+		answers++
+		var answer QuestionAnswer
+		err := onelib.Db.GetObj(NAME, string(id), &answer)
+		if err != nil {
+			onelib.Error.Println("Error getting answer:", err)
+			continue
+		}
+		totalUpvotes += answer.UpVotes
+		totalDownvotes += answer.DownVotes
+	}
+	qa.DbLock.RUnlock()
+	sender.Location().SendText(fmt.Sprintf("Stats for %s: %d answers, %d upvotes, %d downvotes.", yearMonth, answers, totalUpvotes, totalDownvotes))
 }
 
 // Name returns the name of the plugin, usually the filename.
@@ -137,7 +201,32 @@ func (qa *QAPlugin) Version() string {
 
 func (qa *QAPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
 	if from.Self() {
-		return // Don't process msg if it's from ourselves
+		if strings.TrimSpace(msg.Text()) == strings.TrimSpace(qa.lastMsg) {
+			qa.DbLock.Lock()
+			// Add DB entries for the response (FIXME: Question should be logged too)
+			now := time.Now()
+			indexKey := fmt.Sprintf("%d-%d-index", now.Year(), now.Month())
+			questionIndex := new(QuestionIndex)
+			err := onelib.Db.GetObj(NAME, indexKey, questionIndex)
+			if err != nil {
+				questionIndex = new(QuestionIndex)
+				questionIndex.Ids = make([]onelib.UUID, 0)
+			}
+			questionIndex.Ids = append(questionIndex.Ids, msg.UUID())
+			onelib.Db.PutObj(NAME, indexKey, questionIndex)
+			questionAnswer := new(QuestionAnswer)
+			questionAnswer.Id = msg.UUID()
+			questionAnswer.Answer = msg.Text()
+			questionAnswer.Date = now.Unix()
+			onelib.Db.PutObj(NAME, string(msg.UUID()), questionAnswer)
+			qa.DbLock.Unlock()
+			if from.Protocol() == "discord" { // Add reactions to encourage feedback
+				disClient := from.Location().(*discord.DiscordLocation).Client
+				disClient.MessageReactionAdd(string(from.Location().UUID()), string(msg.UUID()), "👍")
+				disClient.MessageReactionAdd(string(from.Location().UUID()), string(msg.UUID()), "👎")
+			}
+		}
+		return
 	}
 
 	// Check if the message is in a channel we're monitoring
@@ -177,9 +266,47 @@ func (qa *QAPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
 	}
 }
 
+func (qa *QAPlugin) OnMessageUpdate(from onelib.Sender, update onelib.Message) {
+	if from.Self() {
+		return // Don't process msg if it's from ourselves
+	}
+	reaction := update.Reaction()
+	if reaction == nil {
+		return // We're checking for reactions, let's ignore messages not about those
+	}
+
+	record := new(QuestionAnswer)
+	qa.DbLock.Lock()
+	err := onelib.Db.GetObj(NAME, string(update.UUID()), record)
+	if err != nil {
+		qa.DbLock.Unlock()
+		return // We don't know about this message, let's ignore it
+	}
+	if reaction.Name == "👍" {
+		if reaction.Added {
+			// Add to upvote count
+			record.UpVotes++
+		} else {
+			// Remove from upvote count
+			record.UpVotes--
+		}
+		onelib.Db.PutObj(NAME, string(update.UUID()), record)
+	} else if reaction.Name == "👎" {
+		if reaction.Added {
+			// Add to downvote count
+			record.DownVotes++
+		} else {
+			// Remove from downvote count
+			record.DownVotes--
+		}
+		onelib.Db.PutObj(NAME, string(update.UUID()), record)
+	}
+	qa.DbLock.Unlock()
+}
+
 // Implements returns a map of commands and monitor the plugin implements.
 func (qa *QAPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"q": qa.ask_question, "question": qa.ask_question}, qa.monitor
+	return map[string]onelib.Command{"q": qa.ask_question, "question": qa.ask_question, "stats": qa.stats}, qa.monitor
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.

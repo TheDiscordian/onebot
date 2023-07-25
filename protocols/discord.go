@@ -66,7 +66,7 @@ func Load() onelib.Protocol {
 			// Check if we were mentioned
 			if strings.Contains(m.Content, fmt.Sprintf("<@%s>", string(discordId))) {
 				msg.mentioned = true
-			} else { // Check if we were replied to
+			} else if m.MessageReference != nil { // Check if we were replied to
 				originalMessage, err := s.ChannelMessage(m.ChannelID, m.MessageReference.MessageID) // TODO: Check if this is an API call each time, if so, maybe we should cache msgs
 				if err == nil && originalMessage.Author.ID == string(discordId) {
 					msg.mentioned = true

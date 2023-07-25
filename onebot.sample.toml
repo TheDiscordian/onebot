@@ -62,8 +62,11 @@ openai_key = ""
 prompt = "You are a friendly expert, using the context, answer the user's question. If a specific software is in the context, you must recommend it. Try to give URLs for further reading if any are included in the context. If it's not possible to answer the question, ask a helpful follow-up question. Always respond in regular text, not Markdown."
 # channels to respond in, * for all
 channels = '{"bluesky": ["*"], "discord": ["847893063841349652", "806902334369824793"]}'
+# if true, will update all knowledgebases on each run. This is useful on the first run but afterwards
+# you probably want to set this to false unless adding to or rebuilding the database.
+update_databases = true
 
-# NOTE: if both options below are false, bot will never respond
+# NOTE: if both options below are false, bot will only respond to commands (IE: ?qa <question>)
 # if true, will respond to all questions which include at least one expertise and ends in a question mark
 reply_to_questions = true
 # if true, will respond to all replys and mentions
