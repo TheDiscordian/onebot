@@ -418,7 +418,7 @@ func (bs *Bluesky) recv(stop chan bool) {
 		default:
 		}
 		feed, err := getFeed(int64(feedCount))
-		if err != nil {
+		if err != nil || len(feed) == 0 {
 			onelib.Error.Println("["+NAME+"] Error getting feed:", err)
 			time.Sleep(time.Duration(feedFreq/2+1) * time.Second)
 			createSession(blueskyHandle, blueskyPassword)
