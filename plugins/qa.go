@@ -163,6 +163,7 @@ func (qa *QAPlugin) stats(msg onelib.Message, sender onelib.Sender) {
 	var index QuestionIndex
 	err := onelib.Db.GetObj(NAME, indexKey, &index)
 	if err != nil {
+		qa.DbLock.RUnlock()
 		sender.Location().SendText(fmt.Sprintf("No stats found for %s.", yearMonth))
 		return
 	}
