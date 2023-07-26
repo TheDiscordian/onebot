@@ -3,7 +3,7 @@
 
 OneBot is a multi-protocol bot driven by feature plugins. It's primary purpose is for chatting, but it's flexible enough to be used for a variety of things.
 
-## Version v0.0.4
+## Version v0.0.5-wip
 
 Changes happen rapidly, the spec is liquid. Solidified instances will be tagged for go module use.
 
