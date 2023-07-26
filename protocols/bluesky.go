@@ -464,7 +464,7 @@ func (bs *Bluesky) recv(stop chan bool) {
 					cid: post.Cid,
 					uri: post.Uri,
 				},
-				text: post.Record.Val.(*bsky.FeedPost).Text,
+				text:      post.Record.Val.(*bsky.FeedPost).Text,
 				mentioned: mentioned,
 			}
 			if reply != nil && reply.Root != nil {

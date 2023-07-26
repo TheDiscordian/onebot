@@ -14,8 +14,6 @@ require (
 	mvdan.cc/xurls/v2 v2.5.0 // indirect
 )
 
-replace github.com/TheDiscordian/gomatrix => ../gomatrix
-
 replace github.com/TheDiscordian/onebot/libs/onecurrency => ./libs/onecurrency/
 
 replace github.com/TheDiscordian/onebot/onelib => ./onelib/

@@ -1,8 +1,9 @@
 # OneBot
+[![Onelib Go Reference](https://pkg.go.dev/badge/github.com/TheDiscordian/onebot/onelib.svg)](https://pkg.go.dev/github.com/TheDiscordian/onebot/onelib)
 
-I've open-sourced this code early, but it's still very much a work in progress. There be dragons ahead.
+OneBot is a multi-protocol bot driven by feature plugins. It's primary purpose is for chatting, but it's flexible enough to be used for a variety of things.
 
-## Version v0.0.4-wip
+## Version v0.0.4
 
 Changes happen rapidly, the spec is liquid. Solidified instances will be tagged for go module use.
 

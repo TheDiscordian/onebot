@@ -3,14 +3,14 @@
 package main
 
 import (
-	"fmt"
-	"strings"
 	"encoding/json"
-	"os"
-	"time"
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/TheDiscordian/onebot/libs/discord"
 	"github.com/TheDiscordian/onebot/onelib"
@@ -88,7 +88,7 @@ func Load() onelib.Plugin {
 
 	qa.monitor = &onelib.Monitor{
 		OnMessageWithText: qa.OnMessageWithText,
-		OnMessageUpdate: qa.OnMessageUpdate,
+		OnMessageUpdate:   qa.OnMessageUpdate,
 	}
 
 	qa.DbLock = new(sync.RWMutex)
@@ -105,19 +105,19 @@ type QuestionAnswer struct {
 	Question  string      `bson:"q"`   // The question asked (can be blank)
 	UpVotes   int         `bson:"u"`   // The number of upvotes the answer has
 	DownVotes int         `bson:"d"`   // The number of downvotes the answer has
-	Date      int64	      `bson:"D"`   // The date the answer was posted
+	Date      int64       `bson:"D"`   // The date the answer was posted
 }
 
 // QAPlugin is an object for satisfying the Plugin interface.
 type QAPlugin struct {
-	monitor *onelib.Monitor
+	monitor   *onelib.Monitor
 	expertise []string
 	openaiKey string
-	prompt string
-	channels map[string][]string
+	prompt    string
+	channels  map[string][]string
 
 	replyToQuestions bool
-	replyToMentions bool
+	replyToMentions  bool
 
 	lastMsg string
 
