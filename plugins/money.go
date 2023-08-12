@@ -310,12 +310,12 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 
 func risk(msg onelib.Message, sender onelib.Sender) {
 	const (
-		riskMax     = 499
-		riskMin     = 80
-		riskFineMax = 500
-		riskFineMin = 81
-		riskFail    = 2                // 1 in x of failure
-		riskTime    = time.Second * 61 // time until command can be called again
+		riskMax     = 500
+		riskMin     = 81
+		riskFineMax = 499
+		riskFineMin = 80
+		riskFail    = 2                 // 1 in x of failure
+		riskTime    = time.Second * 121 // time until command can be called again
 	)
 	if strings.TrimSpace(msg.Text()) != "" {
 		return
