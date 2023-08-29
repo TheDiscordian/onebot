@@ -34,4 +34,4 @@ jobs:
             Release notes for version ${{ github.ref }}
           draft: true
           prerelease: false
-          artifacts: "build/onebot-linux64.tar.xz"
+          artifacts: "bin/onebot-linux64.tar.xz"
