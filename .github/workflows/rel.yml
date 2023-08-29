@@ -24,13 +24,6 @@ jobs:
       - name: Run make build
         run: make rel
 
-      - name: Compress binary
-        uses: svenstaro/upx-action@v2
-        with:
-          file: onebot
-          args: --best --lzma
-          strip: false
-
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
