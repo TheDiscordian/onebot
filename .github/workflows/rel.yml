@@ -21,7 +21,7 @@ jobs:
       - name: Run go mod tidy
         run: go mod tidy
 
-      - name: Run make build
+      - name: Run make rel
         run: make rel
 
       - name: Create GitHub Release
