@@ -24,6 +24,7 @@ rel: build
 	mv protocols/*.so bin/release/protocols
 	cp LICENSE bin/release/LICENSE
 	cp README.md bin/release/README.md
+	cp CONTRIBUTORS bin/release/CONTRIBUTORS
 	tar -caf bin/onebot-linux64.tar.xz bin/release
 
 run:
