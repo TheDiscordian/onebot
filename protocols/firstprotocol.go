@@ -74,7 +74,7 @@ func (fp *FirstProtocol) SendFormattedText(to onelib.UUID, text, formattedText s
 
 // recv should be called after you've recieved data and built a Message object
 func (fp *FirstProtocol) recv(msg onelib.Message, sender onelib.Sender) {
-	onelib.ProcessMessage(fp.prefix, msg, sender)
+	onelib.ProcessMessage([]string{fp.prefix}, msg, sender)
 }
 
 // Remove should disconnect any open connections making it so the bot can forget about the protocol cleanly.

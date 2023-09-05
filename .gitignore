@@ -8,3 +8,6 @@ go.sum
 onebot.toml
 onebot.log
 onedb/
+# qa Configs
+plugins/qa/*.json
+plugins/qa/*.txt

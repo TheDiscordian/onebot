@@ -4,6 +4,7 @@ package onelib
 
 import (
 	"fmt"
+	"strconv"
 	"github.com/pelletier/go-toml"
 )
 
@@ -20,6 +21,32 @@ func GetTextConfig(plugin, key string) string {
 	return ""
 }
 
+// GetBoolConfig returns a config value, checking the DB first, expecting a boolean.
+func GetBoolConfig(plugin, key string) bool {
+	if txt, _ := Db.GetString(plugin, key); txt != "" {
+		b, err := strconv.ParseBool(txt)
+		if err != nil {
+			return false
+		}
+		return b
+	}
+	if cfg := config.Get(fmt.Sprintf("%s.%s", plugin, key)); cfg != nil {
+		return cfg.(bool)
+	}
+	return false
+}
+
+// GetIntConfig returns a config value, checking the DB first, expecting an int.
+func GetIntConfig(plugin, key string) (int, error) {
+	if num, err := Db.GetInt(plugin, key); err == nil {
+		return num, nil
+	}
+	if cfg := config.Get(fmt.Sprintf("%s.%s", plugin, key)); cfg != nil {
+		return int(cfg.(int64)), nil
+	}
+	return 0, fmt.Errorf("config key '%s.%s' not found", plugin, key)
+}
+
 // SetTextConfig sets a string config value.
 func SetTextConfig(plugin, key, text string) {
 	Db.PutString(plugin, key, text)
@@ -28,7 +55,7 @@ func SetTextConfig(plugin, key, text string) {
 // LoadConfig loads the configuration file and inits the DB. This does not respect locks on config, do not run this
 // while any goroutines are running. Ultimately this will check the DB before loading from the config file.
 // TODO set default config path
-// TODO check DB before config file
+// TODO add an option to check DB before config file
 func LoadConfig() {
 	var err error
 	config, err = toml.LoadFile("onebot.toml")

@@ -19,13 +19,24 @@ const (
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Currency Plugin"
 	// VERSION of the plugin
-	VERSION = "v0.0.1"
+	VERSION = "v0.0.2"
 
 	// DEFAULT_CURRENCY is the default currency symbol
 	DEFAULT_CURRENCY = "★"
 )
 
 // TODO command to assign a location to a currency location uuid. Allow it to only be unset by whoever set it.
+
+var (
+	// UserActionMap used for storing the last time an action was called
+	UserActionMap *userMap
+	// AliasConfirmMap stores aliases waiting to be confirmed, key is requester, val is target
+	AliasConfirmMap *aliasConfirmMap
+
+	cuteTime  time.Duration
+	chillTime time.Duration
+	memeTime  time.Duration
+)
 
 // Load returns the Plugin object.
 func Load() onelib.Plugin {
@@ -36,6 +47,20 @@ func Load() onelib.Plugin {
 	AliasConfirmMap = new(aliasConfirmMap)
 	AliasConfirmMap.uMap = make(map[onelib.UUID]onelib.UUID, 1)
 	AliasConfirmMap.lock = new(sync.RWMutex)
+
+	var err error
+	cuteTime, err = time.ParseDuration(onelib.GetTextConfig(NAME, "cute_time"))
+	if err != nil {
+		onelib.Error.Panicln("Error parsing cute_time duration.")
+	}
+	chillTime, err = time.ParseDuration(onelib.GetTextConfig(NAME, "chill_time"))
+	if err != nil {
+		onelib.Error.Panicln("Error parsing chill_time duration.")
+	}
+	memeTime, err = time.ParseDuration(onelib.GetTextConfig(NAME, "meme_time"))
+	if err != nil {
+		onelib.Error.Panicln("Error parsing meme_time duration.")
+	}
 	return new(MoneyPlugin)
 }
 
@@ -62,13 +87,6 @@ func (acm *aliasConfirmMap) Delete(requester onelib.UUID) {
 	delete(acm.uMap, requester)
 	acm.lock.Unlock()
 }
-
-var (
-	// UserActionMap used for storing the last time an action was called
-	UserActionMap *userMap
-	// AliasConfirmMap stores aliases waiting to be confirmed, key is requester, val is target
-	AliasConfirmMap *aliasConfirmMap
-)
 
 type userMap struct {
 	uMap map[onelib.UUID]lastAction
@@ -154,10 +172,12 @@ func performAction(uuid onelib.UUID, actionName, actionText string, actionMinPay
 
 func cute(msg onelib.Message, sender onelib.Sender) {
 	const (
-		cuteMax  = 245
-		cuteMin  = 5
-		cuteTime = time.Minute * 150 // time until command can be called again
+		cuteMax = 245
+		cuteMin = 5
 	)
+	if strings.TrimSpace(msg.Text()) != "" {
+		return
+	}
 	cuteResponses := [][2]string{
 		{"You help Miles build robots and gain **%s%d**!", "You help Miles build robots and gain <strong>%s%d</strong>!"},
 		{"You go to a comedy show with Devin and gain **%s%d**!", "You go to a comedy show with Devin and gain <strong>%s%d</strong>!"},
@@ -196,15 +216,17 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		chillMin     = 40
 		chillFineMax = 145
 		chillFineMin = 1
-		chillFail    = 3                // 1 in x of failure
-		chillTime    = time.Minute * 30 // time until command can be called again
+		chillFail    = 3 // 1 in x of failure
 	)
+	if strings.TrimSpace(msg.Text()) != "" {
+		return
+	}
 	chillResponses := [][2]string{
 		{"Smoke weed with Snoop Dogg and gain **%s%d**!", "Smoke weed with Snoop Dogg and gain <strong>%s%d</strong>!"},
 		{"You play some 100%% Orange Juice with your friends. It's a good time, you gain **%s%d**.", "You play some 100%% Orange Juice with your friends. It's a good time, you gain <strong>%s%d</strong>."},
 		{"You roll a bad blunt, but Snoop Dogg is too high to notice! Good job, have **%s%d**!", "You roll a bad blunt, but Snoop Dogg is too high to notice! Good job, have <strong>%s%d</strong>!"},
 		{"You drop acid and experience another reality. You gain **%s%d**.", "You drop acid and experience another reality. You gain <strong>%s%d</strong>."},
-		{"You fuck your friend's mother and she pays YOU **%s%d**!", "You fuck your friend's mother and she pays YOU <strong>%s%d</strong>!"},
+		{"You sleep with your friend's mother and she pays YOU **%s%d**!", "You sleep with your friend's mother and she pays YOU <strong>%s%d</strong>!"},
 		{"The weed hit you just right, gain **%s%d**!", "The weed hit you just right, gain <strong>%s%d</strong>!"},
 		{"You shoot up some scrubs in an FPS and gain **%s%d**.", "You shoot up some scrubs in an FPS and gain <strong>%s%d</strong>."},
 		{"You vibe out and listen to some music. After a while you gain **%s%d**.", "You vibe out and listen to some music. After a while you gain <strong>%s%d</strong>."},
@@ -222,12 +244,13 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		{"You found a nugget of weed you forgot about, awesome! Gain **%s%d**.", "You found a nugget of weed you forgot about, awesome! Gain <strong>%s%d</strong>."},
 		{"Turns out you had more beer than you thought in the back of the fridge, cool! Gain **%s%d**.", "Turns out you had more beer than you thought in the back of the fridge, cool! Gain <strong>%s%d</strong>."},
 		{"You find some spare coils for your vape you forgot about, score! Gain **%s%d**.", "You find some spare coils for your vape you forgot about, score! Gain <strong>%s%d</strong>."},
+		{"You take some shrooms and bond with your friends, gain **%s%d**.", "You take some shrooms and bond with your friends, gain <strong>%s%d</strong>."},
 	}
 	chillNegativeResponses := [][2]string{
 		{"You roll a bad blunt and Snoop Dogg notices, pay a fine of **%s%d**...", "You roll a bad blunt and Snoop Dogg notices, pay a fine of <strong>%s%d</strong>..."},
 		{"You play some 100%% Orange Juice with your friends. You come in last and lose **%s%d**.", "You play some 100%% Orange Juice with your friends. You come in last and lose <strong>%s%d</strong>."},
-		{"You have a bad trip and end up fucking your friend's mother. Pay a fine of **%s%d**.", "You have a bad trip and end up fucking your friend's mother. Pay a fine of <strong>%s%d</strong>."},
-		{"You fuck your friend's mother, but you don't perform very well and she charges you **%s%d** for the inconvenience.", "You fuck your friend's mother, but you don't perform very well and she charges you <strong>%s%d</strong> for the inconvenience."},
+		{"You have a bad trip and end up sleeping with your friend's mother. Pay a fine of **%s%d**.", "You have a bad trip and end up sleeping with your friend's mother. Pay a fine of <strong>%s%d</strong>."},
+		{"You sleep with your friend's mother, but you don't perform very well and she charges you **%s%d** for the inconvenience.", "You sleep with your friend's mother, but you don't perform very well and she charges you <strong>%s%d</strong> for the inconvenience."},
 		{"You play some Monopoly and the cold hard reality of capitalism sets in... you lose **%s%d**.", "You play some Monopoly and the cold hard reality of capitalism sets in... you lose <strong>%s%d</strong>."},
 		{"You ruin a chill time and turn it into an unchill time, pay a fine of **%s%d**.", "You ruin a chill time and turn it into an unchill time, pay a fine of <strong>%s%d</strong>."},
 		{"You go to fill your bowl, but spill all your weed costing you **%s%d** 💔.", "You go to fill your bowl, but spill all your weed costing you <strong>%s%d</strong> 💔."},
@@ -240,6 +263,7 @@ func chill(msg onelib.Message, sender onelib.Sender) {
 		{"You run out of weed! You pay in sadness and **%s%d** 😞.", "You run out of weed! You pay in sadness and <strong>%s%d</strong> 😞."},
 		{"You run out of beer! You throw up and pay **%s%d** to people for taking care of your drunk ass.", "You run out of beer! You throw up and pay <strong>%s%d</strong> to people for taking care of your drunk ass."},
 		{"You take a dry hit from your vape and lose **%s%d**.", "You take a dry hit from your vape and lose <strong>%s%d</strong>."},
+		{"You take too many shrooms and run into the woods so a search team has to be dispatched to find you. They charge you **%s%d** for the service.", "You take too many shrooms and run into the woods so a search team has to be dispatched to find you. They charge you <strong>%s%d</strong> for the service."},
 	}
 	text, formattedText := performAction(sender.UUID(), "chill", "chill", chillMin, chillMax, chillFineMin, chillFineMax, chillFail, chillResponses, chillNegativeResponses, chillTime)
 	sender.Location().SendFormattedText(text, formattedText)
@@ -252,22 +276,22 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		memeMin     = 5
 		memeFineMax = 250
 		memeFineMin = 5
-		memeFail    = 20                // 1 in x of failure
-		memeTime    = time.Second * 260 // time until command can be called again
+		memeFail    = 20 // 1 in x of failure
 	)
+	if strings.TrimSpace(msg.Text()) != "" {
+		return
+	}
 	memeResponses := [][2]string{
 		{"Dab on all them haters and gain **%s%d**!", "Dab on all them haters and gain <strong>%s%d</strong>!"},
 		{"You pull your dick out for Harambe and gain **%s%d** for your service.", "You pull your dick out for Harambe and gain <strong>%s%d</strong> for your service."},
 		{"You did it for the Vine and got **%s%d**.", "You did it for the Vine and got <strong>%s%d</strong>."},
 		{"You say \"bork\" in a large crowd. Many assume you're homeless and donate **%s%d** to you.", "You say \"bork\" in a large crowd. Many assume you're homeless and donate <strong>%s%d</strong> to you."},
-		{"You vibe out to some penis music. An agent is so impressed he calls you at home and offers you a **%s%d** contract!", "You vibe out to some penis music. An agent is so impressed he calls you at home and offers you a <strong>%s%d</strong> contract!"},
 		{"You score 69420 on your favourite game, nice, have **%s%d**!", "You score 69420 on your favourite game, nice, have <strong>%s%d</strong>!"},
 		{"You find millions of peaches. Wow! Gain **%s%d**.", "You find millions of peaches. Wow! Gain <strong>%s%d</strong>."},
 		{"You spot a government surveilance drone and protect your privacy. Gain **%s%d** for your service.", "You spot a government surveilance drone and protect your privacy. Gain <strong>%s%d</strong> for your service."},
 		{"You convince someone that birds aren't real, doing the world a service, and gain **%s%d**.", "You convince someone that birds aren't real, doing the world a service, and gain <strong>%s%d</strong>."},
 		{"You make an original Steamed Hams video and gain **%s%d**.", "You make an original Steamed Hams video and gain <strong>%s%d</strong>."},
 		{"You make a nice meme, and it hits the Reddit frontpage! Your upvotes are worth **%s%d**.", "You make a nice meme, and it hits the Reddit frontpage! Your upvotes are worth <strong>%s%d</strong>."},
-		{"Someone on r/okaybuddyretard thinks you're genuinely retarded! Good job, have **%s%d**.", "Someone on r/okaybuddyretard thinks you're genuinely retarded! Good job, have <strong>%s%d</strong>."},
 	}
 	memeNegativeResponses := [][2]string{
 		{"You talked shit, and got hit, pay a fine of **%s%d**.", "You talked shit, and got hit, pay a fine of <strong>%s%d</strong>."},
@@ -276,10 +300,8 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 		{"You catch the covids and have to pay **%s%d** in medical expenses.", "You catch the covids and have to pay <strong>%s%d</strong> in medical expenses."},
 		{"You plank in public and take pictures, you pay in shame and **%s%d**.", "You plank in public and take pictures, you pay in shame and <strong>%s%d</strong>."},
 		{"A crowd of people gang up on you and claim that birds are in fact \"real\". You're beaten, and lose **%s%d**.", "A crowd of people gang up on you and claim that birds are in fact \"real\". You're beaten, and lose <strong>%s%d</strong>."},
-		{"You shout the N Word in an urban environment and get robbed for **%s%d**.", "You shout the N Word in an urban environment and get robbed for <strong>%s%d</strong>."},
 		{"You let your memes be dreams and lost **%s%d**.", "You let your memes be dreams and lost <strong>%s%d</strong>."},
 		{"You think you made a decent meme, but the mods delete it and take **%s%d** from you 😰.", "You think you made a decent meme, but the mods delete it and take <strong>%s%d</strong> from you 😰."},
-		{"You're caught being untarded on r/okaybuddyretard and are forced to pay **%s%d** to Big Chungus.", "You're caught being untarded on r/okaybuddyretard and are forced to pay <strong>%s%d</strong> to Big Chungus."},
 	}
 	text, formattedText := performAction(sender.UUID(), "meme", "meme", memeMin, memeMax, memeFineMin, memeFineMax, memeFail, memeResponses, memeNegativeResponses, memeTime)
 	sender.Location().SendFormattedText(text, formattedText)
@@ -288,13 +310,16 @@ func meme(msg onelib.Message, sender onelib.Sender) {
 
 func risk(msg onelib.Message, sender onelib.Sender) {
 	const (
-		riskMax     = 499
-		riskMin     = 80
-		riskFineMax = 500
-		riskFineMin = 81
-		riskFail    = 2                // 1 in x of failure
-		riskTime    = time.Second * 61 // time until command can be called again
+		riskMax     = 500
+		riskMin     = 81
+		riskFineMax = 499
+		riskFineMin = 80
+		riskFail    = 2                 // 1 in x of failure
+		riskTime    = time.Second * 121 // time until command can be called again
 	)
+	if strings.TrimSpace(msg.Text()) != "" {
+		return
+	}
 	riskResponses := [][2]string{
 		{"You bet your life savings on a horse race ... and win **%s%d**!", "You bet your life savings on a horse race ... and win <strong>%s%d</strong>!"},
 		{"You buy a lottery ticket and win **%s%d**!", "You buy a lottery ticket and win <strong>%s%d</strong>!"},
@@ -381,7 +406,7 @@ func leaderboard(msg onelib.Message, sender onelib.Sender) {
 		} else {
 			displayName = string(uco.UUID)
 		}
-		rtext = append(rtext, []rune(fmt.Sprintf("%d. %s (%s%d)\n", i+1, displayName, DEFAULT_CURRENCY, uco.Quantity+uco.BankQuantity))...)
+		rtext = append(rtext, []rune(fmt.Sprintf("%d. @%s (%s%d)\n", i+1, displayName, DEFAULT_CURRENCY, uco.Quantity+uco.BankQuantity))...)
 	}
 	sender.Location().SendText(string(rtext))
 }

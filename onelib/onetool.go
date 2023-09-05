@@ -5,13 +5,19 @@ package onelib
 import (
 	"fmt"
 	"plugin"
+	"runtime/debug"
 	"strings"
 )
 
 // TODO Plugin / protocol list should save when manually changed
 
 // LoadPlugin loads a plugin by filename (minus extension)
-func LoadPlugin(name string) error {
+func LoadPlugin(name string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %s", string(debug.Stack()))
+		}
+	}()
 	rawPlug, err := plugin.Open(fmt.Sprintf("%s/%s.so", PluginDir, name))
 	if err != nil {
 		return err
@@ -68,7 +74,12 @@ func UnloadPlugins() {
 }
 
 // LoadProtocol loads a protocol by filename (minus extension)
-func LoadProtocol(name string) error {
+func LoadProtocol(name string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %s", string(debug.Stack()))
+		}
+	}()
 	rawProto, err := plugin.Open(fmt.Sprintf("%s/%s.so", ProtocolDir, name))
 	if err != nil {
 		return err
@@ -110,25 +121,48 @@ func getcommand(prefix, line string) string {
 }
 
 // ProcessMessage processes command and monitor triggers, spawning a new goroutine for every trigger.
-func ProcessMessage(prefix string, msg Message, sender Sender) {
+func ProcessMessage(prefix []string, msg Message, sender Sender) {
 	text := msg.Text()
-	if len(text) > len(prefix) && string(text[:len(prefix)]) == prefix {
-		commandName := getcommand(prefix, text)
-		if command := Commands.Get(commandName); command != nil {
-			// Call command as goroutine, passing a copy of the message without the command call
-			go command(msg.StripPrefix(prefix+commandName), sender)
+	for _, p := range prefix {
+		if len(text) > len(p) && string(text[:len(p)]) == p {
+			commandName := getcommand(p, text)
+			if command := Commands.Get(commandName); command != nil {
+				// Call command as goroutine, passing a copy of the message without the command call
+				go func() {
+					defer func() {
+						if r := recover(); r != nil {
+							Error.Println("panic:", string(debug.Stack()))
+						}
+					}()
+					command(msg.StripPrefix(p+commandName), sender)
+				}()
 
-			return // TODO once command outputs are bridged, this line needs to be removed so the bridge can still bridge the call itself
+				return // TODO once command outputs are bridged, this line needs to be removed so the bridge can still bridge the call itself
+			}
 		}
 	}
 
 	mons := Monitors.Get()
 	for _, mon := range mons {
 		if mon.OnMessage != nil {
-			go mon.OnMessage(sender, msg)
+			go func(mon *Monitor) {
+				defer func() {
+					if r := recover(); r != nil {
+						Error.Println("panic:", string(debug.Stack()))
+					}
+				}()
+				mon.OnMessage(sender, msg)
+			}(mon)
 		}
 		if len(text) > 0 && mon.OnMessageWithText != nil {
-			go mon.OnMessageWithText(sender, msg)
+			go func(mon *Monitor) {
+				defer func() {
+					if r := recover(); r != nil {
+						Error.Println("panic:", string(debug.Stack()))
+					}
+				}()
+				mon.OnMessageWithText(sender, msg)
+			}(mon)
 		}
 	}
 

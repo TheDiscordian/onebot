@@ -3,10 +3,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,8 +25,17 @@ const (
 	VERSION = "v0.0.0"
 )
 
+var (
+	sharedWeb3StorageKey string
+)
+
+func loadConfig() {
+	sharedWeb3StorageKey = onelib.GetTextConfig(NAME, "shared_web3_storage_key")
+}
+
 // Load returns the Plugin object.
 func Load() onelib.Plugin {
+	loadConfig()
 	return new(IPFSPlugin)
 }
 
@@ -53,7 +63,7 @@ type IPFSPeer struct {
 	ID    string
 }
 
-func doRequest(timeout time.Duration, url string) ([]byte, error) {
+func doRequest(timeout time.Duration, url string, limit int64) ([]byte, error) {
 	var cancel context.CancelFunc
 	ctx := context.Background()
 	if timeout > 0 {
@@ -70,7 +80,39 @@ func doRequest(timeout time.Duration, url string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+
+	reader := resp.Body
+	if limit >= 0 {
+		reader = io.NopCloser(&io.LimitedReader{R: resp.Body, N: limit})
+	}
+	body, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
+
+func doWeb3Request(timeout time.Duration, url string, data []byte) ([]byte, error) {
+	var cancel context.CancelFunc
+	ctx := context.Background()
+	if timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+	c := &http.Client{}
+	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+sharedWeb3StorageKey)
+	req.Body = io.NopCloser(bytes.NewReader(data))
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +121,7 @@ func doRequest(timeout time.Duration, url string) ([]byte, error) {
 }
 
 func doIPFSCheckRequest(timeout time.Duration, url string) (*IPFSCheckResp, error) {
-	body, err := doRequest(timeout, url)
+	body, err := doRequest(timeout, url, -1)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +205,7 @@ func ipfsBlockStat(msg onelib.Message, sender onelib.Sender) {
 	}
 
 	sender.Location().SendText("Trying to stat " + txt + " (up to 30s)")
-	body, err := doRequest(time.Second*30, "http://127.0.0.1:5001/api/v0/block/stat?arg="+txt)
+	body, err := doRequest(time.Second*30, "http://127.0.0.1:5001/api/v0/block/stat?arg="+txt, -1)
 	if err != nil || string(body) == "" {
 		sender.Location().SendText(fmt.Sprintf("Failed to retrieve %s within 30s.", txt))
 		return
@@ -243,6 +285,38 @@ func ipfsCheck(msg onelib.Message, sender onelib.Sender) {
 	sender.Location().SendText(resp)
 }
 
+func web3Help(msg onelib.Message, sender onelib.Sender) {
+	sender.Location().SendText(`Commands:
+* web3-store <cid> (Store up to 100MB on web3.storage)
+
+More features coming soon like being able to set your own API key and bypass the 100MB limit, stay tuned 🚀`)
+}
+
+func web3Store(msg onelib.Message, sender onelib.Sender) {
+	const USAGE = "Usage: web3-store <cid> (100MB limit)"
+	if sharedWeb3StorageKey == "" {
+		sender.Location().SendText("This feature hasn't been enabled by the owner of this bot, please contact them for details.")
+		return
+	}
+	if msg.Text() == "" {
+		sender.Location().SendText(USAGE)
+		return
+	}
+	sender.Location().SendText("Beginning download of '" + msg.Text() + "' 🚀")
+	data, err := doRequest(time.Second*120, "http://127.0.0.1:5001/api/v0/dag/export?arg="+msg.Text(), 100000000) // 100MB limit
+	if err != nil {
+		sender.Location().SendText(fmt.Sprintf("Error exporting CID: %s\n\n%s", err.Error(), USAGE))
+		return
+	}
+	sender.Location().SendText(fmt.Sprintf("Got %dMiB of data! Uploading to web3.storage...", len(data)/1048576))
+	resp, err := doWeb3Request(time.Second*120, "https://api.web3.storage/car", data)
+	if err != nil {
+		sender.Location().SendText(fmt.Sprintf("Error uploading CID: %s\n\n%s", err.Error(), USAGE))
+		return
+	}
+	sender.Location().SendText("Upload complete! web3.storage responded: " + string(resp))
+}
+
 // IPFSPlugin is an object for satisfying the Plugin interface.
 type IPFSPlugin int
 
@@ -263,7 +337,7 @@ func (ip *IPFSPlugin) Version() string {
 
 // Implements returns a map of commands and monitor the plugin implements.
 func (ip *IPFSPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
-	return map[string]onelib.Command{"ipfs-check": ipfsCheck, "ipfs-findprovs": ipfsDHTFindProvs, "ipfs-stat": ipfsBlockStat}, nil
+	return map[string]onelib.Command{"ipfs-check": ipfsCheck, "ipfs-findprovs": ipfsDHTFindProvs, "ipfs-stat": ipfsBlockStat, "web3-help": web3Help, "web3-store": web3Store}, nil
 }
 
 // Remove is necessary to satisfy the Plugin interface, it does nothing.

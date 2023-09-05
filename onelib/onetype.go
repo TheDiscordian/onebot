@@ -287,6 +287,7 @@ type Message interface {
 	StripPrefix(prefix string) Message // Returns a copy of the message with `prefix + commandName + " "` stripped (Ex: "!say Hello" becomes "Hello")
 	Raw() []byte                       // The raw data received
 	UUID() UUID                        // Unique identifier for the message (can be empty)
+	Mentioned() bool                   // True if the bot was mentioned in the message
 	Reaction() *Emoji                  // Returns an emoji that was either added or removed, or nil if none
 	// Reactions() []Reaction // TODO The reactions on the message
 }
@@ -306,6 +307,7 @@ type Sender interface {
 	// Picture // TODO The avatar of the sender
 	Location() Location                           // The location where this sender sent the message from
 	Protocol() string                             // Returns the protocol name responsible for the sender
+	Self() bool                                   // Returns true if the sender is the bot
 	Send(msg Message)                             // Sends a Message to the sender
 	SendText(text string)                         // Sends text to the sender
 	SendFormattedText(text, formattedText string) // Sends formatted text to the sender (correctness might vary between protocols)

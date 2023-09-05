@@ -212,6 +212,10 @@ type matrixMessage struct {
 	formattedText, text string
 }
 
+func (mm *matrixMessage) Mentioned() bool {
+	return strings.Contains(mm.formattedText, matrixAuthUser)
+}
+
 func (mm *matrixMessage) UUID() onelib.UUID {
 	onelib.Debug.Printf("[%s] Message UUIDs not yet supported.\n", NAME)
 	return onelib.UUID("")
@@ -245,6 +249,10 @@ type matrixSender struct {
 	displayName, username string
 	location              *matrixLocation
 	uuid                  onelib.UUID
+}
+
+func (ms *matrixSender) Self() bool {
+	return ms.uuid == onelib.UUID(matrixAuthUser)
 }
 
 func (ms *matrixSender) DisplayName() string {
@@ -426,7 +434,7 @@ func (matrix *Matrix) SendFormattedText(to onelib.UUID, text, formattedText stri
 // recv should be called after you've recieved data and built a Message object
 func (matrix *Matrix) recv(msg onelib.Message, sender onelib.Sender) {
 	if string(sender.UUID()) != matrixAuthUser {
-		onelib.ProcessMessage(matrix.prefix, msg, sender)
+		onelib.ProcessMessage([]string{matrix.prefix}, msg, sender)
 	}
 }
 

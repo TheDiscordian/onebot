@@ -5,10 +5,10 @@ default_nickname = "OneBot"
 default_avatar = ""
 
 plugin_path = "plugins"
-plugins = ["parrot", "roll", "8ball", "tarkovbud", "money", "comics", "bashquotes", "factcrow"]
+plugins = ["parrot", "dice", "8ball", "money", "comics", "bashquotes", "factcrow"]
 
 protocol_path = "protocols"
-protocols = ["matrix", "discord"]
+protocols = ["matrix", "discord", "bluesky"]
 
 [database]
 engine = "leveldb" # valid values are 'leveldb' or 'mongodb'
@@ -31,6 +31,47 @@ auth_token = ""
 # id of admin user (for certain plugins like 'roletriggers')
 admin_id = ""
 
+[bluesky]
+# The handle on Bluesky of the account to use
+handle = ""
+# The password of the Bluesky account
+password = ""
+# The number of posts to fetch at once per poll
+feed_count = 50
+# The number of seconds to wait in between polls
+feed_freq = 10
+# The number of seconds to wait in between syncing followers
+follow_freq = 60
+
+[money]
+# Time until "cute" can be called again
+cute_time = "150m"
+# Time until "chill" can be called again
+chill_time = "30m"
+# Time until "meme" can be called again
+meme_time = "260s"
+
+#
+# Disabled by default plugins
+#
+
+[qa]
+# API key for OpenAI
+openai_key = ""
+# prompt for the AI
+prompt = "You are a friendly expert, using the context, answer the user's question. If a specific software is in the context, you must recommend it. Try to give URLs for further reading if any are included in the context. If it's not possible to answer the question, ask a helpful follow-up question. Always respond in regular text, not Markdown."
+# channels to respond in, * for all
+channels = '{"bluesky": ["*"], "discord": ["847893063841349652", "806902334369824793"]}'
+# if true, will update all knowledgebases on each run. This is useful on the first run but afterwards
+# you probably want to set this to false unless adding to or rebuilding the database.
+update_databases = true
+
+# NOTE: if both options below are false, bot will only respond to commands (IE: ?qa <question>)
+# if true, will respond to all questions which include at least one expertise and ends in a question mark
+reply_to_questions = true
+# if true, will respond to all replys and mentions
+reply_to_mentions = true
+
 [irc_bnetd]
 # the username of the account on the PvPGN server to login as
 nick = "OneBot"
@@ -41,10 +82,6 @@ server = "localhost:6667"
 # channels to autojoin after connection (comma separated)
 auto_join = "#Diablo_II-1"
 
-#
-# Disabled by default plugins
-#
-
 [bnetdbridge]
 # bnetd irc channel to watch
 channel = "#Diablo_II-1"
@@ -54,3 +91,7 @@ dest = '[{"protocol":"matrix","channel":"!example:matrix.org"}]'
 [d2lb]
 # path to ladder.D2DV
 ladder_path = "/usr/local/var/pvpgn/ladders/ladder.D2DV"
+
+[ipfs]
+# web3.storage api key which will be used by users who don't have their own API key registered with the bot
+shared_web3_storage_key = ""

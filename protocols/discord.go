@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/TheDiscordian/onebot/libs/discord"
@@ -26,6 +27,9 @@ var (
 	discordAuthToken string
 	// discordAdminId is the UUID of the admin of the bot. This should probably be an array
 	discordAdminId string
+
+	// our userID
+	discordId onelib.UUID
 )
 
 func loadConfig() {
@@ -58,6 +62,17 @@ func Load() onelib.Protocol {
 			msg := &discordMessage{text: m.Content, id: onelib.UUID(m.ID)}
 			dc := &discord.DiscordClient{Session: client}
 			dl := &discord.DiscordLocation{Client: dc, Uuid: onelib.UUID(m.ChannelID), GuildID: onelib.UUID(m.GuildID)}
+
+			// Check if we were mentioned
+			if strings.Contains(m.Content, fmt.Sprintf("<@%s>", string(discordId))) {
+				msg.mentioned = true
+			} else if m.MessageReference != nil { // Check if we were replied to
+				originalMessage, err := s.ChannelMessage(m.ChannelID, m.MessageReference.MessageID) // TODO: Check if this is an API call each time, if so, maybe we should cache msgs
+				if err == nil && originalMessage.Author.ID == string(discordId) {
+					msg.mentioned = true
+				}
+			}
+
 			if m.Member != nil && m.Member.Nick != "" {
 				displayName = m.Member.Nick
 			} else if m.Author != nil {
@@ -108,7 +123,17 @@ func Load() onelib.Protocol {
 		discordSession.update(msg, sender)
 	})
 
-	discordSession.client.Open()
+	// Add a handler for the Ready event
+	client.AddHandlerOnce(func(s *discordgo.Session, r *discordgo.Ready) {
+		// Retrieve the user ID
+		discordId = onelib.UUID(r.User.ID)
+	})
+
+	err = discordSession.client.Open()
+	if err != nil {
+		onelib.Error.Panicln(err)
+		return nil
+	}
 
 	return onelib.Protocol(discordSession)
 }
@@ -117,6 +142,11 @@ type discordMessage struct {
 	id                  onelib.UUID
 	formattedText, text string
 	emoji               *onelib.Emoji
+	mentioned           bool
+}
+
+func (mm *discordMessage) Mentioned() bool {
+	return mm.mentioned
 }
 
 func (mm *discordMessage) UUID() onelib.UUID {
@@ -150,6 +180,10 @@ type discordSender struct {
 	displayName, username string
 	location              *discord.DiscordLocation
 	uuid                  onelib.UUID
+}
+
+func (ms *discordSender) Self() bool {
+	return ms.uuid == discordId
 }
 
 func (ms *discordSender) DisplayName() string {
@@ -235,7 +269,7 @@ func (dis *Discord) SendFormattedText(to onelib.UUID, text, formattedText string
 // recv should be called after you've recieved data and built a Message object
 func (dis *Discord) recv(msg onelib.Message, sender onelib.Sender) {
 	if string(sender.UUID()) != discordAuthUser {
-		onelib.ProcessMessage(dis.prefix, msg, sender)
+		onelib.ProcessMessage([]string{dis.prefix}, msg, sender)
 	}
 }
 

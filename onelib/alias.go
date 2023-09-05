@@ -42,7 +42,9 @@ func (us *userStore) loadUser(uuid UUID) *UserObject {
 	dbObj := new(UserObject)
 	err := Db.GetObj(AliasTable, "U"+string(uuid), dbObj)
 	if err != nil {
-		Error.Println("GetObj Error:", err)
+		if err.Error() != "leveldb: not found" {
+			Error.Println("GetObj Error:", err)
+		}
 		return nil
 	}
 	return dbObj
