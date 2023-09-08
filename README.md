@@ -130,7 +130,7 @@ OneBot will now be located in the `onebot` directory.
 
 ## Configuring OneBot
 
-OneBot looks in the current directory for a config file name `onebot.toml` by default. Open `onebot.toml` using your favourite text editor (if you're very new to shells, try `nano onebot.toml`). You should see the following at the top:
+OneBot looks in the current directory for a config file named `onebot.sample.toml` by default, copy it to `onebot.toml` with `cp onebot.sample.toml onebot.toml`. Open `onebot.toml` using your favourite text editor (if you're very new to shells, try `nano onebot.toml`). You should see the following at the top:
 
 ```toml
 [general]
