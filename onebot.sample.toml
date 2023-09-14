@@ -55,6 +55,11 @@ meme_time = "260s"
 # Disabled by default plugins
 #
 
+# missioncontrol is a protocol plugin which allows the bot to be controlled via HTTP
+[missioncontrol]
+# The port to listen on over HTTP
+port = 8181
+
 [qa]
 # API key for OpenAI
 openai_key = ""
