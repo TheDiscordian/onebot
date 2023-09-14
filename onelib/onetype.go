@@ -12,6 +12,11 @@ import (
 // UUID represents a unique identifier, usually for a Location (room) or a Sender (user).
 type UUID string
 
+const(
+	// VERSION is the displayed version of the bot
+	VERSION = "v0.1.1-WIP"
+)
+
 var (
 	// DefaultPrefix is the default prefix used to trigger commands. (Ex: In ",say Hello" the "," would be the prefix)
 	DefaultPrefix string
