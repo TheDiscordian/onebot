@@ -2,8 +2,6 @@
 bin/
 plugins/*.so
 protocols/*.so
-# Module checksums
-go.sum
 # Runtime files
 onebot.toml
 onebot.log
