@@ -54,7 +54,7 @@ body {
 .content {
   background-color: #ddd;
   padding: 10px;
-  min-height: 200px;
+  min-height: 250px;
 }
 
 /* Style the footer */
@@ -68,6 +68,18 @@ label {
   display: inline-block;
 }
 
-.first-login-form label {
+.login-form label {
   width: 9em;
+}
+
+.user-list-user {
+  width: 26em;
+}
+
+.user-list-delete {
+  float: right;
+}
+
+.user-list-delete a {
+  text-decoration: none;
 }

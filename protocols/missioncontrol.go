@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"sync"
 
+	"github.com/TheDiscordian/onebot/libs/missioncontrol"
 	"github.com/TheDiscordian/onebot/onelib"
 )
 
@@ -78,6 +79,7 @@ func loadConfig() {
 	if Users.users == nil {
 		Users.users = make(map[string]*user)
 	}
+	missioncontrol.Init()
 }
 
 // Load connects to MissionControl, and sets up listeners. It's required for OneBot.
@@ -92,6 +94,8 @@ func Load() onelib.Protocol {
 	})
 	http.HandleFunc("/logout", logout)
 	http.HandleFunc("/login", serveLogin)
+	http.HandleFunc("/settings", serveSettings)
+	http.HandleFunc("/plugins", servePlugins)
 
 	go http.ListenAndServe(fmt.Sprintf("localhost:%d", MissionControlPort), nil)
 	return onelib.Protocol(&MissionControl{})
@@ -122,22 +126,34 @@ func servePage(w http.ResponseWriter, r *http.Request, page string, loggedIn boo
 
 	indexTpl.ParseFiles("protocols/missioncontrol/header.tmpl", "protocols/missioncontrol/footer.tmpl")
 
-	var pluginCount, protocolCount int
+	var (
+		pluginCount, protocolCount int
+		plugins []string
+	)
 	if loggedIn {
-		pluginCount = len(onelib.Plugins.List())
-		protocolCount = len(onelib.Protocols.List())
+		switch page {
+		case "index":
+			pluginCount = len(onelib.Plugins.List())
+			protocolCount = len(onelib.Protocols.List())
+		case "plugins":
+			plugins = missioncontrol.Plugins.List()
+		}
 	}
 
 	indexVars := struct {
-		PluginCount int
-		ProtocolCount int
+		PluginCount int   // Count of all plugins loaded by OneBot
+		ProtocolCount int // Count of all protocol plugins loaded by OneBot
 		Version string
 		LoggedIn bool
+		Users []string    // List of users registered with Mission Control
+		Plugins []string  // List of plugins loaded which support Mission Control
 	}{
 		PluginCount: pluginCount,
 		ProtocolCount: protocolCount,
 		Version: onelib.VERSION,
 		LoggedIn: loggedIn,
+		Users: Users.List(),
+		Plugins: plugins,
 	}
 
 	err = indexTpl.Execute(w, indexVars)
@@ -162,6 +178,34 @@ func userMatchesPassword(username, password string) bool {
 		return true
 	}
 	return false
+}
+
+func loggedIn(r *http.Request) bool {
+	ses, err := r.Cookie("session")
+	if err != nil || len(Users.List()) == 0 {
+		return false
+	}
+	userCookie, err := r.Cookie("username")
+	if err != nil || !userMatchesSession(userCookie.Value, ses.Value) {
+		return false
+	}
+	return true
+}
+
+func serveSettings(w http.ResponseWriter, r *http.Request) {
+	if !loggedIn(r) {
+		serveLogin(w, r)
+		return
+	}
+	servePage(w, r, "settings", true)
+}
+
+func servePlugins(w http.ResponseWriter, r *http.Request) {
+	if !loggedIn(r) {
+		serveLogin(w, r)
+		return
+	}
+	servePage(w, r, "plugins", true)
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {

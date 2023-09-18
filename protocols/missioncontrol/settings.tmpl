@@ -1,6 +1,4 @@
 {{ template "header" .}}
-<h2>First Login</h2>
-<p>You've never logged in before! Use the form below to create the admin account:</p>
 <script>
 	function verifyPass() {
 		let passObj = document.getElementById('password');
@@ -28,7 +26,9 @@
 		}
 	}
 </script>
-<form class="login-form" action="/firstlogin" method="post">
+<h1>Settings</h1>
+<h2>Add User</h2>
+<form class="login-form" action="/adduser" method="post">
 	<div class="form-group">
 		<label for="username">Username</label>
 		<input type="text" placeholder="Username" name="username" id="username">
@@ -45,4 +45,10 @@
 	<button type="submit" id="submit" disabled>Login</button>
 </form>
 <p id="errorBox" hidden>Error: <span id="error"></span></p>
+<h2>Current Users</h2>
+<div class="user-list"> <!-- FIXME don't use anchors, just grab the on-click on do logic within this page, much easier -->
+{{ range .Users}}
+<p class="user-list-user"><span class="user-list-username">{{ .}}</span><span class="user-list-delete"><a href="#/delete?user={{ .}}">❌</a></span></p>
+{{ end}}
+</div>
 {{ template "footer"}}

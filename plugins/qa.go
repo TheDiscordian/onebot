@@ -5,6 +5,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"os"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/TheDiscordian/onebot/libs/discord"
+	"github.com/TheDiscordian/onebot/libs/missioncontrol"
 	"github.com/TheDiscordian/onebot/onelib"
 )
 
@@ -92,7 +94,19 @@ func Load() onelib.Plugin {
 	}
 
 	qa.DbLock = new(sync.RWMutex)
+
+	missioncontrol.Plugins.Set(NAME, new(QAMissionControlPlugin))
 	return qa
+}
+
+type QAMissionControlPlugin struct { }
+
+func (qamc *QAMissionControlPlugin) HTML() template.HTML {
+	return ""
+}
+
+func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) (string, error) {
+	return nil
 }
 
 type QuestionIndex struct {
