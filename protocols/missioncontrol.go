@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"crypto/rand"
 	"encoding/hex"
+	"sync"
 
 	"github.com/TheDiscordian/onebot/onelib"
 )
@@ -29,11 +30,41 @@ var (
 )
 
 type users struct {
-	Users []*user
+	users map[string]*user // Public to make setting easier, but this should only be accessed directly for creation
+	lock *sync.Mutex
+}
+
+func (u *users) Set(username string, user *user) {
+	u.lock.Lock()
+	defer u.lock.Unlock()
+	u.users[username] = user
+	onelib.Db.PutObj(NAME, "users", u.users)
+}
+
+func (u *users) Get(username string) *user {
+	u.lock.Lock()
+	defer u.lock.Unlock()
+	return u.users[username]
+}
+
+func (u *users) Del(username string) {
+	u.lock.Lock()
+	defer u.lock.Unlock()
+	delete(u.users, username)
+	onelib.Db.PutObj(NAME, "users", u.users)
+}
+
+func (u *users) List() []string {
+	u.lock.Lock()
+	defer u.lock.Unlock()
+	users := make([]string, 0, len(u.users))
+	for username := range u.users {
+		users = append(users, username)
+	}
+	return users
 }
 
 type user struct {
-	Username string // Plaintext username
 	Password [32]byte // Hashed password
 	Session string // Session token (TODO make this expire)
 }
@@ -41,7 +72,12 @@ type user struct {
 func loadConfig() {
 	// MissionControlServer = onelib.GetTextConfig(NAME, "server")
 	MissionControlPort, _ = onelib.GetIntConfig(NAME, "port")
-	onelib.Db.GetObj(NAME, "users", &Users)
+	Users = new(users)
+	onelib.Db.GetObj(NAME, "users", &Users.users)
+	Users.lock = new(sync.Mutex)
+	if Users.users == nil {
+		Users.users = make(map[string]*user)
+	}
 }
 
 // Load connects to MissionControl, and sets up listeners. It's required for OneBot.
@@ -54,6 +90,8 @@ func Load() onelib.Protocol {
 	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "protocols/missioncontrol/style.css")
 	})
+	http.HandleFunc("/logout", logout)
+	http.HandleFunc("/login", serveLogin)
 
 	go http.ListenAndServe(fmt.Sprintf("localhost:%d", MissionControlPort), nil)
 	return onelib.Protocol(&MissionControl{})
@@ -67,7 +105,7 @@ func GenerateSecureToken(length int) string {
     return hex.EncodeToString(b)
 }
 
-func servePage(w http.ResponseWriter, r *http.Request, page string) {
+func servePage(w http.ResponseWriter, r *http.Request, page string, loggedIn bool) {
 	// Load template from protocols/missioncontrol/page.tmpl
 	index, err := ioutil.ReadFile("protocols/missioncontrol/"+page+".tmpl")
 	if err != nil {
@@ -84,14 +122,22 @@ func servePage(w http.ResponseWriter, r *http.Request, page string) {
 
 	indexTpl.ParseFiles("protocols/missioncontrol/header.tmpl", "protocols/missioncontrol/footer.tmpl")
 
+	var pluginCount, protocolCount int
+	if loggedIn {
+		pluginCount = len(onelib.Plugins.List())
+		protocolCount = len(onelib.Protocols.List())
+	}
+
 	indexVars := struct {
 		PluginCount int
 		ProtocolCount int
 		Version string
+		LoggedIn bool
 	}{
-		PluginCount: len(onelib.Plugins.List()),
-		ProtocolCount: len(onelib.Protocols.List()),
+		PluginCount: pluginCount,
+		ProtocolCount: protocolCount,
 		Version: onelib.VERSION,
+		LoggedIn: loggedIn,
 	}
 
 	err = indexTpl.Execute(w, indexVars)
@@ -103,27 +149,48 @@ func servePage(w http.ResponseWriter, r *http.Request, page string) {
 }
 
 func userMatchesSession(username, session string) bool {
-	for _, user := range Users.Users {
-		if user.Username == username && user.Session == session {
-			return true
-		}
+	user := Users.Get(username)
+	if user != nil && user.Session == session {
+		return true
 	}
 	return false
 }
 
 func userMatchesPassword(username, password string) bool {
-	for _, user := range Users.Users {
-		if user.Username == username && user.Password == sha256.Sum256([]byte(password)) {
-			return true
-		}
+	user := Users.Get(username)
+	if user != nil && user.Password == sha256.Sum256([]byte(password)) {
+		return true
 	}
 	return false
 }
 
-func serveIndex(w http.ResponseWriter, r *http.Request) {
-	// Check if the cookie "session" exists and contains the value "pickles"
+func logout(w http.ResponseWriter, r *http.Request) {
 	ses, err := r.Cookie("session")
-	if err != nil || Users == nil || len(Users.Users) == 0 {
+	if err != nil || len(Users.List()) == 0 {
+		serveLogin(w, r)
+		return
+	}
+	userCookie, err := r.Cookie("username")
+	if err != nil || !userMatchesSession(userCookie.Value, ses.Value) {
+		serveLogin(w, r)
+		return
+	}
+	u := Users.Get(userCookie.Value)
+	if u == nil {
+		serveLogin(w, r)
+		return
+	}
+	u.Session = ""
+	Users.Set(userCookie.Value, u)
+	// Expire the cookie on the user's end too
+	http.SetCookie(w, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
+	serveLogin(w, r)
+	return
+}
+
+func serveIndex(w http.ResponseWriter, r *http.Request) {
+	ses, err := r.Cookie("session")
+	if err != nil || len(Users.List()) == 0 {
 		serveLogin(w, r)
 		return
 	}
@@ -132,27 +199,23 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 		serveLogin(w, r)
 		return
 	}
-	servePage(w, r, "index")
+	servePage(w, r, "index", true)
 }
 
 func serveLogin(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
-	password := r.FormValue("password") // z1I1^ucnOiuaYG&hvbbFe2OJ
-	if Users == nil || len(Users.Users) == 0 {
+	password := r.FormValue("password")
+	if len(Users.List()) == 0 {
 		if len(username) > 0 && len(password) > 11 {
-			Users = &users{
-				Users: []*user{
-					&user{
-						Username: username,
+			user := &user{
 						Password: sha256.Sum256([]byte(password)),
 						Session: GenerateSecureToken(32),
-					},
-				},
-			}
-			onelib.Db.PutObj(NAME, "users", Users)
-			http.SetCookie(w, &http.Cookie{Name: "session", Value: Users.Users[0].Session})
-			http.SetCookie(w, &http.Cookie{Name: "username", Value: Users.Users[0].Username})
-			servePage(w, r, "index")
+					}
+			Users.Set(username, user)
+			http.SetCookie(w, &http.Cookie{Name: "session", Value: user.Session, SameSite: http.SameSiteStrictMode, Secure: true, HttpOnly: true})
+			http.SetCookie(w, &http.Cookie{Name: "username", Value: username, SameSite: http.SameSiteStrictMode})
+			servePage(w, r, "index", true)
+			return
 		}
 		serveFirstLogin(w, r)
 		return
@@ -162,25 +225,24 @@ func serveLogin(w http.ResponseWriter, r *http.Request) {
 		// Generate a session token
 		session := GenerateSecureToken(32)
 		// Set a cookie with the session token
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: session})
-		http.SetCookie(w, &http.Cookie{Name: "username", Value: username})
+		http.SetCookie(w, &http.Cookie{Name: "session", Value: session, SameSite: http.SameSiteStrictMode, Secure: true, HttpOnly: true})
+		http.SetCookie(w, &http.Cookie{Name: "username", Value: username, SameSite: http.SameSiteStrictMode})
 		// Set the session token in the Users object
-		for _, user := range Users.Users {
-			if user.Username == username {
-				user.Session = session
-				break
-			}
+		u := Users.Get(username)
+		if u == nil {
+			fmt.Fprintf(w, "Internal server error.")
+			return
 		}
-		// Save the Users object to the database
-		onelib.Db.PutObj(NAME, "users", Users)
-		servePage(w, r, "index")
+		u.Session = session
+		Users.Set(username, u)
+		servePage(w, r, "index", true)
 		return
 	}
-	servePage(w, r, "login")
+	servePage(w, r, "login", false)
 }
 
 func serveFirstLogin(w http.ResponseWriter, r *http.Request) {
-	servePage(w, r, "firstlogin")
+	servePage(w, r, "firstlogin", false)
 }
 
 // MissionControl is the Protocol object used for handling anything MissionControl related.

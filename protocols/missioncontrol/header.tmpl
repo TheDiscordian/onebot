@@ -10,9 +10,13 @@
 		<div class="topnav">
 			<a href="#">Home</a>
 			<a href="#">Plugins</a>
+			<a href="#">Settings</a>
 		</div>
 		<div class="top-right">
-			OneBot {{ .}}
+			<span>OneBot {{ .Version}}</span>
+			{{if .LoggedIn}}<form style="display:inline-block;" action="/logout" method="post">
+				<button class="logout-button">Logout</button>
+			</form>{{ end}}
 		</div>
 
 		<div class="content">
