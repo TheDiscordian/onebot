@@ -52,6 +52,11 @@ func SetTextConfig(plugin, key, text string) {
 	Db.PutString(plugin, key, text)
 }
 
+// SetIntConfig sets an int config value.
+func SetIntConfig(plugin, key string, num int) {
+	Db.PutInt(plugin, key, num)
+}
+
 // LoadConfig loads the configuration file and inits the DB. This does not respect locks on config, do not run this
 // while any goroutines are running. Ultimately this will check the DB before loading from the config file.
 // TODO set default config path
