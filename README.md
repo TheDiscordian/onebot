@@ -5,6 +5,24 @@ OneBot is a multi-protocol bot driven by feature plugins. It's primary purpose i
 
 ## Version v0.1.1-WIP
 
+### Table of Contents
+
+- [Features](#features)
+	- [Protocols](#protocols)
+	- [Plugins](#plugins)
+- [Getting Started](#getting-started)
+	- [Requirements](#requirements)
+	- [Getting OneBot](#getting-onebot)
+- [Configuring OneBot](#configuring-onebot)
+	- [Protocols](#protocols-1)
+		- [Matrix](#matrix)
+		- [Discord](#discord)
+		- [Bluesky](#bluesky)
+- [Running OneBot](#running-onebot)
+- [Building OneBot](#building-onebot)
+	- [Requirements](#requirements-1)
+	- [Instructions](#instructions)
+
 ### Features
 
 OneBot is powered by plugins, this will be a list of features and what plugins provide them.
@@ -206,7 +224,7 @@ The only required fields are `handle` and `password`. They're pretty self-explan
 
 OneBot polls the PDS for new posts, and to check if it has any new followers. OneBot only sees posts by people it follows and will automatically follow anyone who follows it. The defaults should be fine for most people, however you're free to adjust these settings as much as your PDS allows.
 
-### Running OneBot
+## Running OneBot
 
 The simplest way to run OneBot after configuration is simply to run the binary:
 
