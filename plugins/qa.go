@@ -95,18 +95,22 @@ func Load() onelib.Plugin {
 
 	qa.DbLock = new(sync.RWMutex)
 
-	missioncontrol.Plugins.Set(NAME, new(QAMissionControlPlugin))
+	missioncontrol.Plugins.Set(LONGNAME, new(QAMissionControlPlugin))
 	return qa
 }
 
 type QAMissionControlPlugin struct { }
 
 func (qamc *QAMissionControlPlugin) HTML() template.HTML {
-	return ""
+	return template.HTML(fmt.Sprintf(`<h2>%s</h2>
+<h3>Settings</h3>
+Prompt:<br>
+<textarea cols="80" rows="5" id="prompt" name="prompt">%s</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Set</button><br>`,
+		LONGNAME, onelib.GetTextConfig(NAME, "prompt")))
 }
 
 func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) (string, error) {
-	return nil
+	return map[string]func(map[string]any) (string, error){"set_prompt": func(args map[string]any) (string, error) { return args["v"].(string), nil}}
 }
 
 type QuestionIndex struct {

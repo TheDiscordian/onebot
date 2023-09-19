@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"sync"
 
 	"github.com/TheDiscordian/onebot/libs/missioncontrol"
@@ -96,6 +97,8 @@ func Load() onelib.Protocol {
 	http.HandleFunc("/login", serveLogin)
 	http.HandleFunc("/settings", serveSettings)
 	http.HandleFunc("/plugins", servePlugins)
+	http.HandleFunc("/plugin", getPluginHTML)
+	http.HandleFunc("/do", doPluginAction)
 
 	go http.ListenAndServe(fmt.Sprintf("localhost:%d", MissionControlPort), nil)
 	return onelib.Protocol(&MissionControl{})
@@ -162,6 +165,74 @@ func servePage(w http.ResponseWriter, r *http.Request, page string, loggedIn boo
 		fmt.Fprintf(w, "Internal server error.")
 		return
 	}
+}
+
+func getPluginHTML(w http.ResponseWriter, r *http.Request) {
+	if !loggedIn(r) {
+		serveLogin(w, r)
+		return
+	}
+	name := r.URL.Query().Get("name")
+	if name == "" {
+		fmt.Fprintf(w, "No plugin specified.")
+		return
+	}
+	plugin := missioncontrol.Plugins.Get(name)
+	if plugin == nil {
+		fmt.Fprintf(w, "Plugin (%s) not found.", name)
+		return
+	}
+	fmt.Fprintf(w, string(plugin.HTML()))
+	return
+}
+
+func doPluginAction(w http.ResponseWriter, r *http.Request) {
+	if !loggedIn(r) {
+		serveLogin(w, r)
+		return
+	}
+	// Get the plugin name
+	name := r.URL.Query().Get("plugin")
+	if name == "" {
+		fmt.Fprintf(w, "No plugin specified.")
+		return
+	}
+	// Attempt to find the plugin
+	plugin := missioncontrol.Plugins.Get(name)
+	if plugin == nil {
+		fmt.Fprintf(w, "Plugin (%s) not found.", name)
+		return
+	}
+	// Get the specified action
+	action := r.URL.Query().Get("action")
+	if action == "" {
+		fmt.Fprintf(w, "No action specified.")
+		return
+	}
+	// Load the plugin's functions, and check if the action exists
+	functions := plugin.Functions()
+	if functions[action] == nil {
+		fmt.Fprintf(w, "Action not found.")
+		return
+	}
+	
+	// Get the data
+	var data map[string]any
+	jsonData := r.URL.Query().Get("data")
+	// attempt to decode the jsonData as JSON
+	err := json.Unmarshal([]byte(jsonData), &data)
+	if err != nil {
+		data = make(map[string]any)
+		data["v"] = jsonData
+	}
+
+	// Run the function
+	result, err := functions[action](data)
+	if err != nil {
+		fmt.Fprintf(w, "Error: %s", err)
+		return
+	}
+	fmt.Fprintf(w, result)
 }
 
 func userMatchesSession(username, session string) bool {

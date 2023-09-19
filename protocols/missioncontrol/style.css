@@ -83,3 +83,7 @@ label {
 .user-list-delete a {
   text-decoration: none;
 }
+
+.plugin-select {
+  font-size: 1.1em;
+}
