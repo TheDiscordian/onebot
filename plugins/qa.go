@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"bytes"
 
 	"github.com/TheDiscordian/onebot/libs/discord"
 	"github.com/TheDiscordian/onebot/libs/missioncontrol"
@@ -60,8 +61,6 @@ func Load() onelib.Plugin {
 		return nil
 	}
 
-	qa.prompt = onelib.GetTextConfig(NAME, "prompt")
-
 	// channelsJson is in the format: {"protocol": ["channel1", "channel2"]}
 	channelsJson := onelib.GetTextConfig(NAME, "channels")
 	qa.channels = make(map[string][]string)
@@ -102,15 +101,37 @@ func Load() onelib.Plugin {
 type QAMissionControlPlugin struct { }
 
 func (qamc *QAMissionControlPlugin) HTML() template.HTML {
-	return template.HTML(fmt.Sprintf(`<h2>%s</h2>
+	type templateVars struct {
+		Name string
+		Prompt string
+	}
+	templateString := `<h2>{{ .Name}}</h2>
 <h3>Settings</h3>
 Prompt:<br>
-<textarea cols="80" rows="5" id="prompt" name="prompt">%s</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Set</button><br>`,
-		LONGNAME, onelib.GetTextConfig(NAME, "prompt")))
+<textarea cols="80" rows="5" id="prompt" name="prompt">{{ .Prompt}}</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Set</button><br>
+<h3>Tools</h3>
+`
+	tmpl, err := template.New("qa").Parse(templateString)
+	if err != nil {
+		onelib.Error.Println("Error parsing template:", err)
+		return ""
+	}
+	var output bytes.Buffer
+	err = tmpl.Execute(&output, templateVars{LONGNAME, onelib.GetTextConfig(NAME, "prompt")})
+	if err != nil {
+		onelib.Error.Println("Error executing template:", err)
+		return ""
+	}
+	return template.HTML(output.String())
 }
 
 func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) (string, error) {
-	return map[string]func(map[string]any) (string, error){"set_prompt": func(args map[string]any) (string, error) { return args["v"].(string), nil}}
+	return map[string]func(map[string]any) (string, error) {
+		"set_prompt": func(args map[string]any) (string, error) {
+			onelib.SetTextConfig(NAME, "prompt", args["v"].(string))
+			return "", nil
+		},
+	}
 }
 
 type QuestionIndex struct {
@@ -131,7 +152,6 @@ type QAPlugin struct {
 	monitor   *onelib.Monitor
 	expertise []string
 	openaiKey string
-	prompt    string
 	channels  map[string][]string
 
 	replyToQuestions bool
@@ -144,7 +164,7 @@ type QAPlugin struct {
 
 func (qa *QAPlugin) runqa(args ...string) (string, error) {
 	// Call the python script plugins/qa/qa.py, passing the openai key as an environment variable, and capturing the output.
-	_args := []string{"plugins/qa/qa.py", "-e", "plugins/qa/expertise.json", "-mi", "plugins/qa/misinfos.json", "-p", qa.prompt, "-db", "plugins/qa/db-noembed.csv", "-edb", "plugins/qa/db.csv"}
+	_args := []string{"plugins/qa/qa.py", "-e", "plugins/qa/expertise.json", "-mi", "plugins/qa/misinfos.json", "-p", onelib.GetTextConfig(NAME, "prompt"), "-db", "plugins/qa/db-noembed.csv", "-edb", "plugins/qa/db.csv"}
 	cmd := exec.Command("python3", append(_args, args...)...)
 	cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+qa.openaiKey)
 	out, err := cmd.CombinedOutput()
