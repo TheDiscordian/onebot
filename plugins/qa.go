@@ -31,8 +31,6 @@ const (
 // Load returns the Plugin object.
 func Load() onelib.Plugin {
 	qa := new(QAPlugin)
-	qa.replyToQuestions = onelib.GetBoolConfig(NAME, "reply_to_questions")
-	qa.replyToMentions = onelib.GetBoolConfig(NAME, "reply_to_mentions")
 	// Load expertise from expertise.json, which contains a string map where the values are arrays of strings. Store just the keys in qa.expertise
 	expertise_file, err := os.Open("plugins/qa/expertise.json")
 	if err != nil {
@@ -55,8 +53,8 @@ func Load() onelib.Plugin {
 		}
 	}
 
-	qa.openaiKey = onelib.GetTextConfig(NAME, "openai_key")
-	if qa.openaiKey == "" {
+	// Check if openai_key is set
+	if onelib.GetTextConfig(NAME, "openai_key") == "" {
 		onelib.Error.Println("[qa] openai_key can't be blank.")
 		return nil
 	}
@@ -75,12 +73,12 @@ func Load() onelib.Plugin {
 		// TODO Currently these run every time, which takes a long time, and costs some money. We should
 		// instead have a goroutine check if the file is updated, if so, then do some updates instead of
 		// the whole thing.
-		_, err = qa.runqa("db")
+		_, err = runqa("db")
 		if err != nil {
 			onelib.Error.Println("Error downloading db:", err)
 			return nil
 		}
-		_, err = qa.runqa("aidb")
+		_, err = runqa("aidb")
 		if err != nil {
 			onelib.Error.Println("Error updating aidb:", err)
 			return nil
@@ -103,22 +101,61 @@ type QAMissionControlPlugin struct { }
 func (qamc *QAMissionControlPlugin) HTML() template.HTML {
 	templateString := `<h2>{{ .Name}}</h2>
 <h3>Settings</h3>
-OpenAI Key:<br>
+<h4>OpenAI Key:<h4>
 <input size="48" type="password" id="openai_key" name="openai_key" value="{{ .OpenAIKey}}"><button onclick="var x = document.getElementById('openai_key');if (x.type === 'password') {x.type = 'text';} else {x.type = 'password';}">👁️‍🗨️</button><button onclick="doAction('set_openai_key', document.getElementById('openai_key').value)">Save</button><br>
-Prompt:<br>
+<h4>Prompt:</h4>
 <textarea cols="80" rows="5" id="prompt" name="prompt">{{ .Prompt}}</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Save</button><br>
 <h4>Channels</h4>
-Channels to monitor: (WIP)<br>
+<span>Channels to monitor: (WIP)</span><br>
 <textarea cols="80" rows="5" id="channels" name="channels" disabled>{{ .Channels}}</textarea><button onclick="doAction('set_channels', document.getElementById('channels').value)" disabled>Save</button><br>
 <h4>Reply Settings</h4>
-Reply to questions: <input type="checkbox" id="reply_to_questions" name="reply_to_questions" {{ if .ReplyToQuestions}}checked{{ end }}><br>
-Reply to mentions: <input type="checkbox" id="reply_to_mentions" name="reply_to_mentions" {{ if .ReplyToMentions}}checked{{ end }}><br>
+<span>Reply to questions:</span><input type="checkbox" id="reply_to_questions" name="reply_to_questions" {{ if .ReplyToQuestions}}checked{{ end }}><br>
+<span>Reply to mentions:</span><input type="checkbox" id="reply_to_mentions" name="reply_to_mentions" {{ if .ReplyToMentions}}checked{{ end }}><br>
 <button onclick="doAction('set_replies', {qs: document.getElementById('reply_to_questions').checked, ms: document.getElementById('reply_to_mentions').checked})">Save</button><br>
+<h4>Expertise:</h4>
+<textarea cols="80" rows="5" id="expertise" name="expertise" disabled>{{ .Expertise}}</textarea><button onclick="doAction('set_expertise', document.getElementById('expertise').value)" disabled>Save</button><br>
+<h4>Misinfos:</h4>
+<textarea cols="80" rows="5" id="misinfos" name="misinfos" disabled>{{ .Misinfos}}</textarea><button onclick="doAction('set_misinfos', document.getElementById('misinfos').value)" disabled>Save</button><br>
 <h3>Tools</h3>
+<!-- Tools are collapsed to avoid clutter -->
+<details><summary>Ask Question</summary>
+<!-- Prompt that doesn't save -->
+<h4>Prompt (doesn't save):</h4>
+<textarea cols="80" rows="5" id="temp_prompt" name="prompt">{{ .Prompt}}</textarea><br>
+<h4>Question:</h4>
+<textarea cols="80" rows="5" id="question" name="question"></textarea><button onclick="doAction('question', {q: document.getElementById('question').value, p: document.getElementById('temp_prompt').value})">Ask</button><br>
+</details>
 `
 	tmpl, err := template.New("qa").Parse(templateString)
 	if err != nil {
 		onelib.Error.Println("Error parsing template:", err)
+		return ""
+	}
+
+	// Expertise and Misinfos are stored in files, so we need to read them in.
+	// Read the entire contents of the file into expertise
+	expertiseFile, err := os.Open("plugins/qa/expertise.json")
+	if err != nil {
+		onelib.Error.Println("Error opening expertise.json:", err)
+		return ""
+	}
+	defer expertiseFile.Close()
+	expertiseBytes, err := io.ReadAll(expertiseFile)
+	if err != nil {
+		onelib.Error.Println("Error reading expertise.json:", err)
+		return ""
+	}
+
+	// Read the entire contents of the file into misinfos
+	misinfosFile, err := os.Open("plugins/qa/misinfos.json")
+	if err != nil {
+		onelib.Error.Println("Error opening misinfos.json:", err)
+		return ""
+	}
+	defer misinfosFile.Close()
+	misinfosBytes, err := io.ReadAll(misinfosFile)
+	if err != nil {
+		onelib.Error.Println("Error reading misinfos.json:", err)
 		return ""
 	}
 
@@ -129,6 +166,8 @@ Reply to mentions: <input type="checkbox" id="reply_to_mentions" name="reply_to_
 		Channels string
 		ReplyToQuestions bool
 		ReplyToMentions bool
+		Expertise string
+		Misinfos string
 	}{
 		Name: LONGNAME,
 		Prompt: onelib.GetTextConfig(NAME, "prompt"),
@@ -136,6 +175,8 @@ Reply to mentions: <input type="checkbox" id="reply_to_mentions" name="reply_to_
 		Channels: onelib.GetTextConfig(NAME, "channels"),
 		ReplyToQuestions: onelib.GetBoolConfig(NAME, "reply_to_questions"),
 		ReplyToMentions: onelib.GetBoolConfig(NAME, "reply_to_mentions"),
+		Expertise: string(expertiseBytes),
+		Misinfos: string(misinfosBytes),
 	}
 
 	var output bytes.Buffer
@@ -166,6 +207,14 @@ func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) 
 			onelib.SetBoolConfig(NAME, "reply_to_mentions", args["ms"].(bool))
 			return "Reply settings saved!", nil
 		},
+		"question": func(args map[string]any) (string, error) {
+			txt, err := runqa("-q", args["q"].(string), "question", "-p", args["p"].(string))
+			if err != nil {
+				onelib.Error.Println("Error running qa.py:", err)
+				return "", err
+			}
+			return txt, nil
+		},
 	}
 }
 
@@ -186,22 +235,18 @@ type QuestionAnswer struct {
 type QAPlugin struct {
 	monitor   *onelib.Monitor
 	expertise []string
-	openaiKey string
 	channels  map[string][]string
-
-	replyToQuestions bool
-	replyToMentions  bool
 
 	lastMsg string
 
 	DbLock *sync.RWMutex
 }
 
-func (qa *QAPlugin) runqa(args ...string) (string, error) {
+func runqa(args ...string) (string, error) {
 	// Call the python script plugins/qa/qa.py, passing the openai key as an environment variable, and capturing the output.
-	_args := []string{"plugins/qa/qa.py", "-e", "plugins/qa/expertise.json", "-mi", "plugins/qa/misinfos.json", "-p", onelib.GetTextConfig(NAME, "prompt"), "-db", "plugins/qa/db-noembed.csv", "-edb", "plugins/qa/db.csv"}
+	_args := []string{"plugins/qa/qa.py", "-e", "plugins/qa/expertise.json", "-mi", "plugins/qa/misinfos.json", "-db", "plugins/qa/db-noembed.csv", "-edb", "plugins/qa/db.csv"}
 	cmd := exec.Command("python3", append(_args, args...)...)
-	cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+qa.openaiKey)
+	cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+onelib.GetTextConfig(NAME, "openai_key"))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		onelib.Debug.Println("qa.py output:", string(out))
@@ -211,7 +256,7 @@ func (qa *QAPlugin) runqa(args ...string) (string, error) {
 }
 
 func (qa *QAPlugin) ask_question(msg onelib.Message, sender onelib.Sender) {
-	txt, err := qa.runqa("-q", msg.Text(), "question")
+	txt, err := runqa("-q", msg.Text(), "question", "-p", onelib.GetTextConfig(NAME, "prompt"))
 	if err != nil {
 		onelib.Error.Println("Error running qa.py:", err)
 		return
@@ -320,23 +365,17 @@ func (qa *QAPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
 		return
 	}
 
-	ask := false
 	txt := strings.ToLower(msg.Text())
-	if qa.replyToMentions && msg.Mentioned() {
-		ask = true
-	}
-	if !ask && qa.replyToQuestions {
+	if onelib.GetBoolConfig(NAME, "reply_to_mentions") && msg.Mentioned() {
+		qa.ask_question(msg, from)
+	} else if onelib.GetBoolConfig(NAME, "reply_to_questions") {
 		// Check if txt contains any of the strings in qa.expertise, and ends in a question mark
 		for _, v := range qa.expertise {
 			if strings.Contains(txt, v) && strings.HasSuffix(txt, "?") {
-				ask = true
+				qa.ask_question(msg, from)
 				break
 			}
 		}
-	}
-
-	if ask {
-		qa.ask_question(msg, from)
 	}
 }
 
