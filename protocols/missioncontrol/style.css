@@ -87,3 +87,8 @@ label {
 .plugin-select {
   font-size: 1.1em;
 }
+
+.error-box {
+  color: red;
+  font-weight: bold;
+}

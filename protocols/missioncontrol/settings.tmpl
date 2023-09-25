@@ -10,13 +10,13 @@
 			passObj.style.color = 'green';
 			passObj.style.borderColor = 'green';
 			document.getElementById('errorBox').hidden = true;
-			document.getElementsByTagName('button')[0].disabled = false;
+			document.getElementById('createUserButton').disabled = false;
 		} else {
 			confirmPassObj.style.color = 'red';
 			confirmPassObj.style.borderColor = 'red';
 			passObj.style.color = 'red';
 			passObj.style.borderColor = 'red';
-			document.getElementsByTagName('button')[0].disabled = true;
+			document.getElementById('createUserButton').disabled = true;
 			document.getElementById('errorBox').hidden = false;
 			if (password.length < 12) {
 				document.getElementById('error').innerText = 'Password must be at least 12 characters long.';
@@ -25,6 +25,23 @@
 			}
 		}
 	}
+
+	async function deleteUser(user) {
+		let response = await fetch('/deleteuser?user=' + user);
+		let text = await response.text();
+		if (text == user) {
+			window.location.reload();
+		} else {
+			alert('Error deleting ' + user + ': ' + text);
+		}
+	}
+
+	function areYouSure(user) {
+		if (confirm('Are you sure you want to delete ' + user + '?')) {
+			deleteUser(user);
+		}
+	}
+
 </script>
 <h1>Settings</h1>
 <h2>Add User</h2>
@@ -42,13 +59,13 @@
 		<label for="confirmpassword">Confirm Password</label>
 		<input type="password" placeholder="Confirm Password" name="confirmpassword" id="confirmpassword" oninput="verifyPass();">
 	</div>
-	<button type="submit" id="submit" disabled>Login</button>
+	<button type="submit" id="createUserButton" disabled>Create User</button>
 </form>
-<p id="errorBox" hidden>Error: <span id="error"></span></p>
+<p id="errorBox" class="error-box" hidden>Error: <span id="error"></span></p>
 <h2>Current Users</h2>
 <div class="user-list"> <!-- FIXME don't use anchors, just grab the on-click on do logic within this page, much easier -->
 {{ range .Users}}
-<p class="user-list-user"><span class="user-list-username">{{ .}}</span><span class="user-list-delete"><a href="#/delete?user={{ .}}">❌</a></span></p>
+<p class="user-list-user"><span class="user-list-username">{{ .}}</span><span class="user-list-delete"><a href="#" id="{{ .}}" onclick="areYouSure('{{ .}}');">❌</a></span></p>
 {{ end}}
 </div>
 {{ template "footer"}}

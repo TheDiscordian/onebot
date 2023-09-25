@@ -28,7 +28,7 @@ const (
 
 var (
 	MissionControlPort int
-	Users *users // FIXME: This isn't thread-safe, make it thread-safe
+	Users *users
 )
 
 type users struct {
@@ -87,7 +87,7 @@ func loadConfig() {
 func Load() onelib.Protocol {
 	loadConfig()
 	/*
-	   Code to be executed on-load goes here (connects)
+	   Code to be executed on-load goes here
 	*/
 	http.HandleFunc("/", serveIndex)
 	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +99,8 @@ func Load() onelib.Protocol {
 	http.HandleFunc("/plugins", servePlugins)
 	http.HandleFunc("/plugin", getPluginHTML)
 	http.HandleFunc("/do", doPluginAction)
+	http.HandleFunc("/adduser", addUserHandler)
+	http.HandleFunc("/deleteuser", deleteUserHandler)
 
 	go http.ListenAndServe(fmt.Sprintf("localhost:%d", MissionControlPort), nil)
 	return onelib.Protocol(&MissionControl{})
@@ -317,22 +319,70 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 	servePage(w, r, "index", true)
 }
 
+func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	if !loggedIn(r) {
+		serveLogin(w, r)
+		return
+	}
+	// Get username from http GET variable
+	username := r.URL.Query().Get("user")
+	if Users.Get(username) == nil {
+		fmt.Fprintf(w, "User '%s' not found.", username)
+		return
+	} else if len(Users.List()) == 1 {
+		fmt.Fprintf(w, "Cannot delete last user.")
+		return
+	}
+	Users.Del(username)
+	fmt.Fprintf(w, username)
+}
+
+func addUserHandler(w http.ResponseWriter, r *http.Request) {
+	if !loggedIn(r) {
+		serveLogin(w, r)
+		return
+	}
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	_, err := addUser(username, password)
+	if err != nil {
+		errMsg := fmt.Sprintf("Error creating user: %s", err)
+		onelib.Error.Printf("[%s] %s", NAME, errMsg)
+		fmt.Fprintf(w, errMsg)
+		return
+	}
+	serveSettings(w, r)
+}
+
+func addUser(username, password string) (string, error) {
+	if len(username) == 0 || len(password) < 12 {
+		return "", fmt.Errorf("username or password too short")
+	}
+	if Users.Get(username) != nil {
+		return "", fmt.Errorf("user already exists")
+	}
+	user := &user{
+				Password: sha256.Sum256([]byte(password)),
+				Session: GenerateSecureToken(32),
+			}
+	Users.Set(username, user)
+	return user.Session, nil
+}
+
 func serveLogin(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	if len(Users.List()) == 0 {
-		if len(username) > 0 && len(password) > 11 {
-			user := &user{
-						Password: sha256.Sum256([]byte(password)),
-						Session: GenerateSecureToken(32),
-					}
-			Users.Set(username, user)
-			http.SetCookie(w, &http.Cookie{Name: "session", Value: user.Session, SameSite: http.SameSiteStrictMode, Secure: true, HttpOnly: true})
-			http.SetCookie(w, &http.Cookie{Name: "username", Value: username, SameSite: http.SameSiteStrictMode})
-			servePage(w, r, "index", true)
+		// First login, create the user
+		session, err := addUser(username, password)
+		if err != nil {
+			onelib.Error.Printf("[%s] Error creating user: %s", NAME, err)
+			serveFirstLogin(w, r)
 			return
 		}
-		serveFirstLogin(w, r)
+		http.SetCookie(w, &http.Cookie{Name: "session", Value: session, SameSite: http.SameSiteStrictMode, Secure: true, HttpOnly: true})
+		http.SetCookie(w, &http.Cookie{Name: "username", Value: username, SameSite: http.SameSiteStrictMode})
+		servePage(w, r, "index", true)
 		return
 	}
 
