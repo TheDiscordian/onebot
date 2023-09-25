@@ -101,14 +101,19 @@ func Load() onelib.Plugin {
 type QAMissionControlPlugin struct { }
 
 func (qamc *QAMissionControlPlugin) HTML() template.HTML {
-	type templateVars struct {
-		Name string
-		Prompt string
-	}
 	templateString := `<h2>{{ .Name}}</h2>
 <h3>Settings</h3>
+OpenAI Key:<br>
+<input size="48" type="password" id="openai_key" name="openai_key" value="{{ .OpenAIKey}}"><button onclick="var x = document.getElementById('openai_key');if (x.type === 'password') {x.type = 'text';} else {x.type = 'password';}">👁️‍🗨️</button><button onclick="doAction('set_openai_key', document.getElementById('openai_key').value)">Save</button><br>
 Prompt:<br>
-<textarea cols="80" rows="5" id="prompt" name="prompt">{{ .Prompt}}</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Set</button><br>
+<textarea cols="80" rows="5" id="prompt" name="prompt">{{ .Prompt}}</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Save</button><br>
+<h4>Channels</h4>
+Channels to monitor: (WIP)<br>
+<textarea cols="80" rows="5" id="channels" name="channels" disabled>{{ .Channels}}</textarea><button onclick="doAction('set_channels', document.getElementById('channels').value)" disabled>Save</button><br>
+<h4>Reply Settings</h4>
+Reply to questions: <input type="checkbox" id="reply_to_questions" name="reply_to_questions" {{ if .ReplyToQuestions}}checked{{ end }}><br>
+Reply to mentions: <input type="checkbox" id="reply_to_mentions" name="reply_to_mentions" {{ if .ReplyToMentions}}checked{{ end }}><br>
+<button onclick="doAction('set_replies', {qs: document.getElementById('reply_to_questions').checked, ms: document.getElementById('reply_to_mentions').checked})">Save</button><br>
 <h3>Tools</h3>
 `
 	tmpl, err := template.New("qa").Parse(templateString)
@@ -116,8 +121,25 @@ Prompt:<br>
 		onelib.Error.Println("Error parsing template:", err)
 		return ""
 	}
+
+	templateVars := struct {
+		Name string
+		Prompt string
+		OpenAIKey string
+		Channels string
+		ReplyToQuestions bool
+		ReplyToMentions bool
+	}{
+		Name: LONGNAME,
+		Prompt: onelib.GetTextConfig(NAME, "prompt"),
+		OpenAIKey: onelib.GetTextConfig(NAME, "openai_key"),
+		Channels: onelib.GetTextConfig(NAME, "channels"),
+		ReplyToQuestions: onelib.GetBoolConfig(NAME, "reply_to_questions"),
+		ReplyToMentions: onelib.GetBoolConfig(NAME, "reply_to_mentions"),
+	}
+
 	var output bytes.Buffer
-	err = tmpl.Execute(&output, templateVars{LONGNAME, onelib.GetTextConfig(NAME, "prompt")})
+	err = tmpl.Execute(&output, templateVars)
 	if err != nil {
 		onelib.Error.Println("Error executing template:", err)
 		return ""
@@ -129,7 +151,20 @@ func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) 
 	return map[string]func(map[string]any) (string, error) {
 		"set_prompt": func(args map[string]any) (string, error) {
 			onelib.SetTextConfig(NAME, "prompt", args["v"].(string))
+			return "Prompt saved!", nil
+		},
+		"set_openai_key": func(args map[string]any) (string, error) {
+			onelib.SetTextConfig(NAME, "openai_key", args["v"].(string))
+			return "OpenAI Key saved!", nil
+		},
+		/*"set_channels": func(args map[string]any) (string, error) {
+			onelib.SetTextConfig(NAME, "channels", args["v"].(string))
 			return "", nil
+		},*/
+		"set_replies": func(args map[string]any) (string, error) {
+			onelib.SetBoolConfig(NAME, "reply_to_questions", args["qs"].(bool))
+			onelib.SetBoolConfig(NAME, "reply_to_mentions", args["ms"].(bool))
+			return "Reply settings saved!", nil
 		},
 	}
 }
