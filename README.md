@@ -35,6 +35,8 @@ OneBot can connect to, read, and send messages on the following protocols:
 - [Discord](https://discord.com) ([discord.go](protocols/discord.go))
 - [Bnetd IRC Chat](https://pvpgn.fandom.com/wiki/BNETD#IRC_Settings) ([irc_bnetd.go](protocols/irc_bnetd.go))
 - [Matrix](https://matrix.org/) ([matrix.go](protocols/matrix.go))
+- Mission Control Web Portal ([missioncontrol.go](protocols/missioncontrol.go))
+	- This plugin spins up a web portal to control the bot from (on localhost).
 
 #### Plugins
 
