@@ -107,6 +107,34 @@ func getChannelsMap() map[string][]string {
 	return channels
 }
 
+func getMisinfosMap() map[string][]string {
+	misinfosJson := onelib.GetTextConfig(NAME, "misinfos")
+	misinfos := make(map[string][]string)
+	err := json.Unmarshal([]byte(misinfosJson), &misinfos)
+	if err != nil {
+		onelib.Error.Println("[qa] Error decoding misinfos:", err)
+		return nil
+	}
+	return misinfos
+}
+
+func saveMisinfosMap(misinfos map[string][]string) error {
+	misinfosJson, err := json.Marshal(misinfos)
+	if err != nil {
+		return err
+	}
+	misinfosFile, err := os.OpenFile("plugins/qa/misinfos.json", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return err
+	}
+	defer misinfosFile.Close()
+	_, err = misinfosFile.Write(misinfosJson)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type QAMissionControlPlugin struct { }
 
 func (qamc *QAMissionControlPlugin) HTML() template.HTML {
@@ -131,9 +159,24 @@ Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><
 <span>Reply to mentions:</span><input type="checkbox" id="reply_to_mentions" name="reply_to_mentions" {{ if .ReplyToMentions}}checked{{ end }}><br>
 <button onclick="doAction('set_replies', {qs: document.getElementById('reply_to_questions').checked, ms: document.getElementById('reply_to_mentions').checked})">Save</button><br>
 <h4>Expertise:</h4>
-<textarea cols="80" rows="5" id="expertise" name="expertise" disabled>{{ .Expertise}}</textarea><button onclick="doAction('set_expertise', document.getElementById('expertise').value)" disabled>Save</button><br>
+{{ range $k, $v := .Expertise}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_expertise', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+	{{ range $v }}
+		<input class="list-input-box" size="80" type="text" value="{{ .}}"></input><button onclick="doAction('delete_expertise', {t: '{{$k}}', e: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+	{{ end }}<br>
+	Add {{$k}} expertise: <input type="text" size="80" id="add_expertise_{{$k}}" name="add_expertise_{{$k}}"></input><button onclick="doAction('add_expertise', {t: '{{$k}}', e: document.getElementById('add_expertise_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
+	</details>
+{{ end }}<br>
+Add subject: <input type="text" id="add_expertise_subject" name="add_expertise_subject"></input><button onclick="doAction('add_expertise_subject', document.getElementById('add_expertise_subject').value).then(() => {window.location.reload();});">➕</button><br>
 <h4>Misinfos:</h4>
-<textarea cols="80" rows="5" id="misinfos" name="misinfos" disabled>{{ .Misinfos}}</textarea><button onclick="doAction('set_misinfos', document.getElementById('misinfos').value)" disabled>Save</button><br>
+{{ range $k, $v := .Misinfos}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_misinfo_subject', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+	{{ range $v }}
+		<textarea rows="1" class="list-input-box" cols="80">{{ .}}</textarea><button onclick="doAction('delete_misinfo', {t: '{{$k}}', m: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+	{{ end }}<br>
+	Add {{$k}} misinfo: <textarea rows="1" cols="80" id="add_misinfo_{{$k}}" name="add_misinfo_{{$k}}"></textarea><button onclick="doAction('add_misinfo', {t: '{{$k}}', m: document.getElementById('add_misinfo_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
+	</details>
+{{ end }}<br>
+Add subject: <input type="text" id="add_misinfo_subject" name="add_misinfo_subject"></input><button onclick="doAction('add_misinfo_subject', document.getElementById('add_misinfo_subject').value).then(() => {window.location.reload();});">➕</button><br>
+<!--<textarea cols="80" rows="5" id="misinfos" name="misinfos" disabled>{{ .Misinfos}}</textarea><button onclick="doAction('set_misinfos', document.getElementById('misinfos').value)" disabled>Save</button><br>-->
 <h3>Tools</h3>
 <!-- Tools are collapsed to avoid clutter -->
 <details><summary>Ask Question</summary>
@@ -142,7 +185,8 @@ Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><
 <textarea cols="80" rows="5" id="temp_prompt" name="prompt">{{ .Prompt}}</textarea><br>
 <h4>Question:</h4>
 <textarea cols="80" rows="5" id="question" name="question"></textarea><button onclick="doAction('question', {q: document.getElementById('question').value, p: document.getElementById('temp_prompt').value})">Ask</button><br>
-</details>
+</details><br>
+<button onclick="alert('Database will be rebuilt now! This can take *several minutes*, you\'ll get another alert upon completion.');doAction('rebuild_db');">Rebuild DB</button><br>
 `
 	tmpl, err := template.New("qa").Parse(templateString)
 	if err != nil {
@@ -163,6 +207,12 @@ Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><
 		onelib.Error.Println("Error reading expertise.json:", err)
 		return ""
 	}
+	expertise := make(map[string][]string)
+	err = json.Unmarshal(expertiseBytes, &expertise)
+	if err != nil {
+		onelib.Error.Println("Error decoding expertise.json:", err)
+		return ""
+	}
 
 	// Read the entire contents of the file into misinfos
 	misinfosFile, err := os.Open("plugins/qa/misinfos.json")
@@ -176,6 +226,12 @@ Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><
 		onelib.Error.Println("Error reading misinfos.json:", err)
 		return ""
 	}
+	misinfos := make(map[string][]string)
+	err = json.Unmarshal(misinfosBytes, &misinfos)
+	if err != nil {
+		onelib.Error.Println("Error decoding misinfos.json:", err)
+		return ""
+	}
 
 	templateVars := struct {
 		Name string
@@ -184,8 +240,8 @@ Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><
 		Channels map[string][]string
 		ReplyToQuestions bool
 		ReplyToMentions bool
-		Expertise string
-		Misinfos string
+		Expertise map[string][]string
+		Misinfos map[string][]string
 	}{
 		Name: LONGNAME,
 		Prompt: onelib.GetTextConfig(NAME, "prompt"),
@@ -193,8 +249,8 @@ Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><
 		Channels: getChannelsMap(),
 		ReplyToQuestions: onelib.GetBoolConfig(NAME, "reply_to_questions"),
 		ReplyToMentions: onelib.GetBoolConfig(NAME, "reply_to_mentions"),
-		Expertise: string(expertiseBytes),
-		Misinfos: string(misinfosBytes),
+		Expertise: expertise,
+		Misinfos: misinfos,
 	}
 
 	var output bytes.Buffer
@@ -231,20 +287,22 @@ func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) 
 		},
 		"add_channel": func(args map[string]any) (string, error) {
 			channels := getChannelsMap()
-			channels[args["p"].(string)] = append(channels[args["p"].(string)], args["c"].(string))
+			proto := args["p"].(string)
+			channels[proto] = append(channels[proto], args["c"].(string))
 			channelsJson, err := json.Marshal(channels)
 			if err != nil {
 				onelib.Error.Println("[qa] Error encoding channels:", err)
 				return "", err
 			}
 			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
-			return "", nil
+			return fmt.Sprintf("[%s] Added channel: %s", proto, args["c"].(string)), nil
 		},
 		"delete_channel": func(args map[string]any) (string, error) {
 			channels := getChannelsMap()
-			for i, v := range channels[args["p"].(string)] {
+			proto := args["p"].(string)
+			for i, v := range channels[proto] {
 				if v == args["c"].(string) {
-					channels[args["p"].(string)] = append(channels[args["p"].(string)][:i], channels[args["p"].(string)][i+1:]...)
+					channels[proto] = append(channels[proto][:i], channels[proto][i+1:]...)
 					break
 				}
 			}
@@ -277,6 +335,66 @@ func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) 
 			}
 			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
 			return "", nil
+		},
+		"add_misinfo": func(args map[string]any) (string, error) {
+			misinfos := getMisinfosMap()
+			topic := args["t"].(string)
+			misinfos[topic] = append(misinfos[topic], args["m"].(string))
+			err := saveMisinfosMap(misinfos)
+			if err != nil {
+				onelib.Error.Println("[qa] Error saving misinfos:", err)
+				return "", err
+			}
+			return "", nil
+		},
+		"delete_misinfo": func(args map[string]any) (string, error) {
+			misinfos := getMisinfosMap()
+			topic := args["t"].(string)
+			for i, v := range misinfos[topic] {
+				if v == args["m"].(string) {
+					misinfos[topic] = append(misinfos[topic][:i], misinfos[topic][i+1:]...)
+					break
+				}
+			}
+			err := saveMisinfosMap(misinfos)
+			if err != nil {
+				onelib.Error.Println("[qa] Error saving misinfos:", err)
+				return "", err
+			}
+			return "", nil
+		},
+		"add_misinfo_subject": func(args map[string]any) (string, error) {
+			misinfos := getMisinfosMap()
+			misinfos[args["v"].(string)] = make([]string, 0)
+			err := saveMisinfosMap(misinfos)
+			if err != nil {
+				onelib.Error.Println("[qa] Error saving misinfos:", err)
+				return "", err
+			}
+			return "", nil
+		},
+		"delete_misinfo_subject": func(args map[string]any) (string, error) {
+			misinfos := getMisinfosMap()
+			delete(misinfos, args["v"].(string))
+			err := saveMisinfosMap(misinfos)
+			if err != nil {
+				onelib.Error.Println("[qa] Error saving misinfos:", err)
+				return "", err
+			}
+			return "", nil
+		},
+		"rebuild_db": func(args map[string]any) (string, error) {
+			_, err := runqa("db")
+			if err != nil {
+				onelib.Error.Println("Error downloading db:", err)
+				return "", err
+			}
+			_, err = runqa("aidb")
+			if err != nil {
+				onelib.Error.Println("Error updating aidb:", err)
+				return "", err
+			}
+			return "DB rebuilt!", nil
 		},
 	}
 }
