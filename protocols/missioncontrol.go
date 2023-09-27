@@ -80,7 +80,6 @@ func loadConfig() {
 	if Users.users == nil {
 		Users.users = make(map[string]*user)
 	}
-	missioncontrol.Init()
 }
 
 // Load connects to MissionControl, and sets up listeners. It's required for OneBot.

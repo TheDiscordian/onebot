@@ -7,15 +7,9 @@ import (
 	"sync"
 )
 
-var (
-	Plugins *plugins
-)
-
-func Init() {
-	Plugins = &plugins{
+var Plugins *plugins = &plugins {
 		plugins: make(map[string]Plugin),
 		lock: &sync.RWMutex{},
-	}
 }
 
 type plugins struct {
@@ -24,36 +18,24 @@ type plugins struct {
 }
 
 func (p *plugins) Set(name string, plugin Plugin) {
-	if Plugins == nil {
-		return
-	}
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	p.plugins[name] = plugin
 }
 
 func (p *plugins) Get(name string) Plugin {
-	if Plugins == nil {
-		return nil
-	}
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	return p.plugins[name]
 }
 
 func (p *plugins) Del(name string) {
-	if Plugins == nil {
-		return
-	}
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	delete(p.plugins, name)
 }
 
 func (p *plugins) List() []string {
-	if Plugins == nil {
-		return nil
-	}
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	var plugins []string
