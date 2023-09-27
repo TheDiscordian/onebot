@@ -25,7 +25,7 @@ const (
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Question & Answer Plugin"
 	// VERSION of the plugin
-	VERSION = "v0.0.0"
+	VERSION = "v0.1.0"
 )
 
 // Load returns the Plugin object.
@@ -96,6 +96,17 @@ func Load() onelib.Plugin {
 	return qa
 }
 
+func getChannelsMap() map[string][]string {
+	channelsJson := onelib.GetTextConfig(NAME, "channels")
+	channels := make(map[string][]string)
+	err := json.Unmarshal([]byte(channelsJson), &channels)
+	if err != nil {
+		onelib.Error.Println("[qa] Error decoding channels:", err)
+		return nil
+	}
+	return channels
+}
+
 type QAMissionControlPlugin struct { }
 
 func (qamc *QAMissionControlPlugin) HTML() template.HTML {
@@ -106,8 +117,15 @@ func (qamc *QAMissionControlPlugin) HTML() template.HTML {
 <h4>Prompt:</h4>
 <textarea cols="80" rows="5" id="prompt" name="prompt">{{ .Prompt}}</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Save</button><br>
 <h4>Channels</h4>
-<span>Channels to monitor: (WIP)</span><br>
-<textarea cols="80" rows="5" id="channels" name="channels" disabled>{{ .Channels}}</textarea><button onclick="doAction('set_channels', document.getElementById('channels').value)" disabled>Save</button><br>
+<span>Channels to monitor:</span><br>
+{{ range $k, $v := .Channels}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_protocol', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+	{{ range $v }}
+		<input class="list-input-box" type="text" value="{{ .}}"></input><button onclick="doAction('delete_channel', {p: '{{$k}}', c: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+	{{ end }}<br>
+	Add {{$k}} channel: <input type="text" id="add_channel_{{$k}}" name="add_channel_{{$k}}"></input><button onclick="doAction('add_channel', {p: '{{$k}}', c: document.getElementById('add_channel_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
+	</details>
+{{ end }}<br>
+Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><button onclick="doAction('add_protocol', document.getElementById('add_protocol').value).then(() => {window.location.reload();});">➕</button><br>
 <h4>Reply Settings</h4>
 <span>Reply to questions:</span><input type="checkbox" id="reply_to_questions" name="reply_to_questions" {{ if .ReplyToQuestions}}checked{{ end }}><br>
 <span>Reply to mentions:</span><input type="checkbox" id="reply_to_mentions" name="reply_to_mentions" {{ if .ReplyToMentions}}checked{{ end }}><br>
@@ -163,7 +181,7 @@ func (qamc *QAMissionControlPlugin) HTML() template.HTML {
 		Name string
 		Prompt string
 		OpenAIKey string
-		Channels string
+		Channels map[string][]string
 		ReplyToQuestions bool
 		ReplyToMentions bool
 		Expertise string
@@ -172,7 +190,7 @@ func (qamc *QAMissionControlPlugin) HTML() template.HTML {
 		Name: LONGNAME,
 		Prompt: onelib.GetTextConfig(NAME, "prompt"),
 		OpenAIKey: onelib.GetTextConfig(NAME, "openai_key"),
-		Channels: onelib.GetTextConfig(NAME, "channels"),
+		Channels: getChannelsMap(),
 		ReplyToQuestions: onelib.GetBoolConfig(NAME, "reply_to_questions"),
 		ReplyToMentions: onelib.GetBoolConfig(NAME, "reply_to_mentions"),
 		Expertise: string(expertiseBytes),
@@ -198,10 +216,6 @@ func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) 
 			onelib.SetTextConfig(NAME, "openai_key", args["v"].(string))
 			return "OpenAI Key saved!", nil
 		},
-		/*"set_channels": func(args map[string]any) (string, error) {
-			onelib.SetTextConfig(NAME, "channels", args["v"].(string))
-			return "", nil
-		},*/
 		"set_replies": func(args map[string]any) (string, error) {
 			onelib.SetBoolConfig(NAME, "reply_to_questions", args["qs"].(bool))
 			onelib.SetBoolConfig(NAME, "reply_to_mentions", args["ms"].(bool))
@@ -214,6 +228,55 @@ func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) 
 				return "", err
 			}
 			return txt, nil
+		},
+		"add_channel": func(args map[string]any) (string, error) {
+			channels := getChannelsMap()
+			channels[args["p"].(string)] = append(channels[args["p"].(string)], args["c"].(string))
+			channelsJson, err := json.Marshal(channels)
+			if err != nil {
+				onelib.Error.Println("[qa] Error encoding channels:", err)
+				return "", err
+			}
+			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
+			return "", nil
+		},
+		"delete_channel": func(args map[string]any) (string, error) {
+			channels := getChannelsMap()
+			for i, v := range channels[args["p"].(string)] {
+				if v == args["c"].(string) {
+					channels[args["p"].(string)] = append(channels[args["p"].(string)][:i], channels[args["p"].(string)][i+1:]...)
+					break
+				}
+			}
+			channelsJson, err := json.Marshal(channels)
+			if err != nil {
+				onelib.Error.Println("[qa] Error encoding channels:", err)
+				return "", err
+			}
+			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
+			return "", nil
+		},
+		"add_protocol": func(args map[string]any) (string, error) {
+			channels := getChannelsMap()
+			channels[args["v"].(string)] = make([]string, 0)
+			channelsJson, err := json.Marshal(channels)
+			if err != nil {
+				onelib.Error.Println("[qa] Error encoding channels:", err)
+				return "", err
+			}
+			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
+			return "", nil
+		},
+		"delete_protocol": func(args map[string]any) (string, error) {
+			channels := getChannelsMap()
+			delete(channels, args["v"].(string))
+			channelsJson, err := json.Marshal(channels)
+			if err != nil {
+				onelib.Error.Println("[qa] Error encoding channels:", err)
+				return "", err
+			}
+			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
+			return "", nil
 		},
 	}
 }

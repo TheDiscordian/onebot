@@ -80,7 +80,7 @@ label {
   float: right;
 }
 
-.user-list-delete a {
+.link-button {
   text-decoration: none;
 }
 
@@ -91,4 +91,9 @@ label {
 .error-box {
   color: red;
   font-weight: bold;
+}
+
+.list-input-box {
+  margin-left: 1em;
+  margin-bottom: 1px;
 }

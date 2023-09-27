@@ -212,9 +212,11 @@ def answer_question(question,
 		output = ""
 
 		q_lower = question.lower()
+
 		for mi in MISINFOS:
-			if mi[0] in q_lower:
-				context.append(mi[1])
+			if mi in q_lower:
+				for info in MISINFOS[mi]:
+					context.append(info)
 
 		# If debug, print the raw model response
 		if debug:
@@ -262,7 +264,7 @@ MODELS = {"text-ada-001": 0.0004, "text-babbage-001": 0.0005, "text-curie-001": 
 DB = 'db-noembed.csv'
 EMBED_DB = 'db.csv'
 OPENAI_API_KEY = ""
-MISINFOS = []
+MISINFOS = {}
 PROMPT = "You are a friendly expert, using the context, answer the user's question. If a specific software is in the context, you must recommend it. If it's not possible to answer the question, ask a helpful follow-up question."
 
 EXPERTISE = None
