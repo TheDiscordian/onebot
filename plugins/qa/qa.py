@@ -48,6 +48,18 @@ def update_databases():
 	# reload_database()
 	print()
 
+# remove_knowledge(tech_file) removes all the knowledge contained in tech_file from the embed db based off title (first column), and then saves the CSV
+def remove_knowledge(tech_file):
+	texts = get_file_texts(tech_file)
+	df = pd.read_csv(EMBED_DB, header=0)
+	for t in texts:
+		# remove all rows with the same title
+		df = df[df.title != t[0]]
+	df.to_csv(EMBED_DB, index=False, encoding='utf-8')
+
+	# Remove the file
+	os.remove(tech_file)
+
 def get_file_texts(tech_file):
 	ai_tech_texts = []
 	# read the file
@@ -284,7 +296,7 @@ cheap_tokens_used = 0
 # Run with: python3 pln_qa.py --help
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Ask a question about anything. To use AI functions, set your OpenAPI key via the environment variable "OPENAI_API_KEY".')
-	parser.add_argument('action', type=str, help='The action to take (ex: db, aidb, question, ingest).')
+	parser.add_argument('action', type=str, help='The action to take (ex: db, aidb, question, ingest, remove).')
 	parser.add_argument('--question', '-q', type=str, help='The question to ask.')
 	parser.add_argument('--model', '-m', type=str, help='The model to use (default: %s).' % model)
 	parser.add_argument('--debug', '-d', type=bool, help='Debug mode (print more info).')
@@ -294,8 +306,8 @@ if __name__ == "__main__":
 	parser.add_argument('--misinfos', '-mi', type=str, help='Path to json file containing misinfo (used with "question" action)".')
 	parser.add_argument('--database', '-db', type=str, help='Path to csv file containing database (default: %s).' % DB)
 	parser.add_argument('--embeddb', '-edb', type=str, help='Path to csv file containing database with embeddings (default: %s).' % EMBED_DB)
-	parser.add_argument('--url', '-u', type=str, help='URL to use for "ingest" action.')
-	parser.add_argument('--subject', type=str, help='Subject to use for "ingest" action (Ex: "ipfs").')
+	parser.add_argument('--url', '-u', type=str, help='URL to use for "ingest" and "expertise" actions.')
+	parser.add_argument('--subject', type=str, help='Subject to use for "ingest" and "remove" actions (Ex: "ipfs").')
 	parser.add_argument('--filename', '-f', type=str, help='Filename to use for "ingest" action (optional).')
 	args = parser.parse_args()
 	if args.action is None:
@@ -388,6 +400,18 @@ if __name__ == "__main__":
 		get_file(args.url, args.subject, filename)
 		texts = get_file_texts("plugins/qa/dbs/%s/%s" % (args.subject, filename))
 		get_embeddings(texts, pricing=pricing, append=True)
+	elif action == "remove":
+		if args.url is None:
+			print("Specify a url with '-u <url>'")
+			parser.print_help()
+			exit(1)
+		url = args.url
+		if args.subject is None:
+			print("Specify a subject with '--subject <subject>'")
+			parser.print_help()
+			exit(1)
+		filename = url.split("/")[-1]
+		remove_knowledge("plugins/qa/dbs/%s/%s" % (args.subject, filename))
 	else:
 		parser.print_help()
 		exit(1)

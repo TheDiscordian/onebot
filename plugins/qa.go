@@ -135,6 +135,41 @@ func saveMisinfosMap(misinfos map[string][]string) error {
 	return nil
 }
 
+func getExpertiseMap() (map[string][]string, error) {
+	expertise := make(map[string][]string)
+	expertiseFile, err := os.Open("plugins/qa/expertise.json")
+	if err != nil {
+		return nil, err
+	}
+	defer expertiseFile.Close()
+	expertiseBytes, err := io.ReadAll(expertiseFile)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(expertiseBytes, &expertise)
+	if err != nil {
+		return nil, err
+	}
+	return expertise, nil
+}
+
+func saveExpertiseMap(expertise map[string][]string) error {
+	expertiseJson, err := json.Marshal(expertise)
+	if err != nil {
+		return err
+	}
+	expertiseFile, err := os.OpenFile("plugins/qa/expertise.json", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return err
+	}
+	defer expertiseFile.Close()
+	_, err = expertiseFile.Write(expertiseJson)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type QAMissionControlPlugin struct { }
 
 func (qamc *QAMissionControlPlugin) HTML() template.HTML {
@@ -159,7 +194,7 @@ Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><
 <span>Reply to mentions:</span><input type="checkbox" id="reply_to_mentions" name="reply_to_mentions" {{ if .ReplyToMentions}}checked{{ end }}><br>
 <button onclick="doAction('set_replies', {qs: document.getElementById('reply_to_questions').checked, ms: document.getElementById('reply_to_mentions').checked})">Save</button><br>
 <h4>Expertise:</h4>
-{{ range $k, $v := .Expertise}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_expertise', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+{{ range $k, $v := .Expertise}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_expertise_subject', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
 	{{ range $v }}
 		<input class="list-input-box" size="80" type="text" value="{{ .}}"></input><button onclick="doAction('delete_expertise', {t: '{{$k}}', e: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
 	{{ end }}<br>
@@ -395,6 +430,33 @@ func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) 
 				return "", err
 			}
 			return "DB rebuilt!", nil
+		},
+		"delete_expertise": func(args map[string]any) (string, error) {
+			url := args["e"].(string)
+			subject := args["t"].(string)
+			_, err := runqa("remove", "--url", url, "--subject", subject)
+			if err != nil {
+				onelib.Error.Println("Error removing expertise:", err)
+				return "", err
+			}
+			// Remove the expertise from expertise.json too
+			expertise, err := getExpertiseMap()
+			if err != nil {
+				onelib.Error.Println("Error getting expertise:", err)
+				return "", err
+			}
+			for i, v := range expertise[subject] {
+				if v == url {
+					expertise[subject] = append(expertise[subject][:i], expertise[subject][i+1:]...)
+					break
+				}
+			}
+			err = saveExpertiseMap(expertise)
+			if err != nil {
+				onelib.Error.Println("Error saving expertise:", err)
+				return "", err
+			}
+			return fmt.Sprintf("[%s] Removed: %s", subject, url), nil
 		},
 	}
 }
