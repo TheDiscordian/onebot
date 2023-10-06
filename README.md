@@ -3,7 +3,25 @@
 
 OneBot is a multi-protocol bot driven by feature plugins. It's primary purpose is for chatting, but it's flexible enough to be used for a variety of things.
 
-## Version v0.1.0
+## Version v0.1.1-WIP
+
+### Table of Contents
+
+- [Features](#features)
+	- [Protocols](#protocols)
+	- [Plugins](#plugins)
+- [Getting Started](#getting-started)
+	- [Requirements](#requirements)
+	- [Getting OneBot](#getting-onebot)
+- [Configuring OneBot](#configuring-onebot)
+	- [Protocols](#protocols-1)
+		- [Matrix](#matrix)
+		- [Discord](#discord)
+		- [Bluesky](#bluesky)
+- [Running OneBot](#running-onebot)
+- [Building OneBot](#building-onebot)
+	- [Requirements](#requirements-1)
+	- [Instructions](#instructions)
 
 ### Features
 
@@ -17,6 +35,8 @@ OneBot can connect to, read, and send messages on the following protocols:
 - [Discord](https://discord.com) ([discord.go](protocols/discord.go))
 - [Bnetd IRC Chat](https://pvpgn.fandom.com/wiki/BNETD#IRC_Settings) ([irc_bnetd.go](protocols/irc_bnetd.go))
 - [Matrix](https://matrix.org/) ([matrix.go](protocols/matrix.go))
+- Mission Control Web Portal ([missioncontrol.go](protocols/missioncontrol.go))
+	- This plugin spins up a web portal to control the bot from (on localhost).
 
 #### Plugins
 
@@ -130,7 +150,7 @@ OneBot will now be located in the `onebot` directory.
 
 ## Configuring OneBot
 
-OneBot looks in the current directory for a config file name `onebot.toml` by default. Open `onebot.toml` using your favourite text editor (if you're very new to shells, try `nano onebot.toml`). You should see the following at the top:
+OneBot looks in the current directory for a config file named `onebot.sample.toml` by default, copy it to `onebot.toml` with `cp onebot.sample.toml onebot.toml`. Open `onebot.toml` using your favourite text editor (if you're very new to shells, try `nano onebot.toml`). You should see the following at the top:
 
 ```toml
 [general]
@@ -206,7 +226,7 @@ The only required fields are `handle` and `password`. They're pretty self-explan
 
 OneBot polls the PDS for new posts, and to check if it has any new followers. OneBot only sees posts by people it follows and will automatically follow anyone who follows it. The defaults should be fine for most people, however you're free to adjust these settings as much as your PDS allows.
 
-### Running OneBot
+## Running OneBot
 
 The simplest way to run OneBot after configuration is simply to run the binary:
 

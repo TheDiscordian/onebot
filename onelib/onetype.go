@@ -12,6 +12,11 @@ import (
 // UUID represents a unique identifier, usually for a Location (room) or a Sender (user).
 type UUID string
 
+const(
+	// VERSION is the displayed version of the bot
+	VERSION = "v0.1.1-WIP"
+)
+
 var (
 	// DefaultPrefix is the default prefix used to trigger commands. (Ex: In ",say Hello" the "," would be the prefix)
 	DefaultPrefix string
@@ -101,6 +106,17 @@ func (pm *ProtocolMap) DeleteAll() {
 	pm.lock.Unlock()
 }
 
+// List returns a list of all protocols in the ProtocolMap.
+func (pm *ProtocolMap) List() []string {
+	pm.lock.RLock()
+	list := make([]string, 0, len(pm.protocols))
+	for protocolName := range pm.protocols {
+		list = append(list, protocolName)
+	}
+	pm.lock.RUnlock()
+	return list
+}
+
 // PluginMap is a concurrent-safe map of plugins.
 type PluginMap struct {
 	plugins map[string]Plugin
@@ -145,6 +161,17 @@ func (pm *PluginMap) DeleteAll() {
 		delete(pm.plugins, plugName)
 	}
 	pm.lock.Unlock()
+}
+
+// List returns a list of all plugins in the PluginMap.
+func (pm *PluginMap) List() []string {
+	pm.lock.RLock()
+	list := make([]string, 0, len(pm.plugins))
+	for pluginName := range pm.plugins {
+		list = append(list, pluginName)
+	}
+	pm.lock.RUnlock()
+	return list
 }
 
 // CommandMap is a concurrent-safe map of commands

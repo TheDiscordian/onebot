@@ -1,0 +1,23 @@
+{{ define "header"}}
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>OneBot: Mission Control</title>
+		<link rel="stylesheet" type="text/css" href="style.css">
+	</head>
+
+	<body>
+		<div class="topnav">
+			<a href="/">Home</a>
+			<a href="/plugins">Plugins</a>
+			<a href="/settings">Settings</a>
+		</div>
+		<div class="top-right">
+			<span>OneBot {{ .Version}}</span>
+			{{if .LoggedIn}}<form style="display:inline-block;" action="/logout" method="post">
+				<button class="logout-button">Logout</button>
+			</form>{{ end}}
+		</div>
+
+		<div class="content">
+{{ end}}

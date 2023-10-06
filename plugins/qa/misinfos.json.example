@@ -1,5 +1,5 @@
-[["ipfs",
+{"ipfs":[
 	"IPFS doesn't distribute or replicate data across the network unless another node explicitly chooses to store the data. When you add a file to your IPFS node, it's only stored on your IPFS node until another node explicity requests the data."
-],["helia",
+],"helia":[
 	"Helia's repository and docs are located at https://github.com/ipfs/helia."
-]]
+]}

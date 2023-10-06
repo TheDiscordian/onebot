@@ -5,14 +5,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
+	"bytes"
 
 	"github.com/TheDiscordian/onebot/libs/discord"
+	"github.com/TheDiscordian/onebot/libs/missioncontrol"
 	"github.com/TheDiscordian/onebot/onelib"
 )
 
@@ -22,14 +25,12 @@ const (
 	// LONGNAME is what's presented to the user
 	LONGNAME = "Question & Answer Plugin"
 	// VERSION of the plugin
-	VERSION = "v0.0.0"
+	VERSION = "v0.1.0"
 )
 
 // Load returns the Plugin object.
 func Load() onelib.Plugin {
 	qa := new(QAPlugin)
-	qa.replyToQuestions = onelib.GetBoolConfig(NAME, "reply_to_questions")
-	qa.replyToMentions = onelib.GetBoolConfig(NAME, "reply_to_mentions")
 	// Load expertise from expertise.json, which contains a string map where the values are arrays of strings. Store just the keys in qa.expertise
 	expertise_file, err := os.Open("plugins/qa/expertise.json")
 	if err != nil {
@@ -52,13 +53,11 @@ func Load() onelib.Plugin {
 		}
 	}
 
-	qa.openaiKey = onelib.GetTextConfig(NAME, "openai_key")
-	if qa.openaiKey == "" {
+	// Check if openai_key is set
+	if onelib.GetTextConfig(NAME, "openai_key") == "" {
 		onelib.Error.Println("[qa] openai_key can't be blank.")
 		return nil
 	}
-
-	qa.prompt = onelib.GetTextConfig(NAME, "prompt")
 
 	// channelsJson is in the format: {"protocol": ["channel1", "channel2"]}
 	channelsJson := onelib.GetTextConfig(NAME, "channels")
@@ -74,12 +73,12 @@ func Load() onelib.Plugin {
 		// TODO Currently these run every time, which takes a long time, and costs some money. We should
 		// instead have a goroutine check if the file is updated, if so, then do some updates instead of
 		// the whole thing.
-		_, err = qa.runqa("db")
+		_, err = runqa("db")
 		if err != nil {
 			onelib.Error.Println("Error downloading db:", err)
 			return nil
 		}
-		_, err = qa.runqa("aidb")
+		_, err = runqa("aidb")
 		if err != nil {
 			onelib.Error.Println("Error updating aidb:", err)
 			return nil
@@ -92,7 +91,374 @@ func Load() onelib.Plugin {
 	}
 
 	qa.DbLock = new(sync.RWMutex)
+
+	missioncontrol.Plugins.Set(LONGNAME, new(QAMissionControlPlugin))
 	return qa
+}
+
+func getChannelsMap() map[string][]string {
+	channelsJson := onelib.GetTextConfig(NAME, "channels")
+	channels := make(map[string][]string)
+	err := json.Unmarshal([]byte(channelsJson), &channels)
+	if err != nil {
+		onelib.Error.Println("[qa] Error decoding channels:", err)
+		return nil
+	}
+	return channels
+}
+
+func getMisinfosMap() map[string][]string {
+	misinfosJson := onelib.GetTextConfig(NAME, "misinfos")
+	misinfos := make(map[string][]string)
+	err := json.Unmarshal([]byte(misinfosJson), &misinfos)
+	if err != nil {
+		onelib.Error.Println("[qa] Error decoding misinfos:", err)
+		return nil
+	}
+	return misinfos
+}
+
+func saveMisinfosMap(misinfos map[string][]string) error {
+	misinfosJson, err := json.Marshal(misinfos)
+	if err != nil {
+		return err
+	}
+	misinfosFile, err := os.OpenFile("plugins/qa/misinfos.json", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return err
+	}
+	defer misinfosFile.Close()
+	_, err = misinfosFile.Write(misinfosJson)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getExpertiseMap() (map[string][]string, error) {
+	expertise := make(map[string][]string)
+	expertiseFile, err := os.Open("plugins/qa/expertise.json")
+	if err != nil {
+		return nil, err
+	}
+	defer expertiseFile.Close()
+	expertiseBytes, err := io.ReadAll(expertiseFile)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(expertiseBytes, &expertise)
+	if err != nil {
+		return nil, err
+	}
+	return expertise, nil
+}
+
+func saveExpertiseMap(expertise map[string][]string) error {
+	expertiseJson, err := json.Marshal(expertise)
+	if err != nil {
+		return err
+	}
+	expertiseFile, err := os.OpenFile("plugins/qa/expertise.json", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return err
+	}
+	defer expertiseFile.Close()
+	_, err = expertiseFile.Write(expertiseJson)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type QAMissionControlPlugin struct { }
+
+func (qamc *QAMissionControlPlugin) HTML() template.HTML {
+	templateString := `<h2>{{ .Name}}</h2>
+<h3>Settings</h3>
+<h4>OpenAI Key:<h4>
+<input size="48" type="password" id="openai_key" name="openai_key" value="{{ .OpenAIKey}}"><button onclick="var x = document.getElementById('openai_key');if (x.type === 'password') {x.type = 'text';} else {x.type = 'password';}">👁️‍🗨️</button><button onclick="doAction('set_openai_key', document.getElementById('openai_key').value)">Save</button><br>
+<h4>Prompt:</h4>
+<textarea cols="80" rows="5" id="prompt" name="prompt">{{ .Prompt}}</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Save</button><br>
+<h4>Channels</h4>
+<span>Channels to monitor:</span><br>
+{{ range $k, $v := .Channels}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_protocol', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+	{{ range $v }}
+		<input class="list-input-box" type="text" value="{{ .}}"></input><button onclick="doAction('delete_channel', {p: '{{$k}}', c: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+	{{ end }}<br>
+	Add {{$k}} channel: <input type="text" id="add_channel_{{$k}}" name="add_channel_{{$k}}"></input><button onclick="doAction('add_channel', {p: '{{$k}}', c: document.getElementById('add_channel_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
+	</details>
+{{ end }}<br>
+Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><button onclick="doAction('add_protocol', document.getElementById('add_protocol').value).then(() => {window.location.reload();});">➕</button><br>
+<h4>Reply Settings</h4>
+<span>Reply to questions:</span><input type="checkbox" id="reply_to_questions" name="reply_to_questions" {{ if .ReplyToQuestions}}checked{{ end }}><br>
+<span>Reply to mentions:</span><input type="checkbox" id="reply_to_mentions" name="reply_to_mentions" {{ if .ReplyToMentions}}checked{{ end }}><br>
+<button onclick="doAction('set_replies', {qs: document.getElementById('reply_to_questions').checked, ms: document.getElementById('reply_to_mentions').checked})">Save</button><br>
+<h4>Expertise:</h4>
+{{ range $k, $v := .Expertise}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_expertise_subject', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+	{{ range $v }}
+		<input class="list-input-box" size="80" type="text" value="{{ .}}"></input><button onclick="doAction('delete_expertise', {t: '{{$k}}', e: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+	{{ end }}<br>
+	Add {{$k}} expertise: <input type="text" size="80" id="add_expertise_{{$k}}" name="add_expertise_{{$k}}"></input><button onclick="doAction('add_expertise', {t: '{{$k}}', e: document.getElementById('add_expertise_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
+	</details>
+{{ end }}<br>
+Add subject: <input type="text" id="add_expertise_subject" name="add_expertise_subject"></input><button onclick="doAction('add_expertise_subject', document.getElementById('add_expertise_subject').value).then(() => {window.location.reload();});">➕</button><br>
+<h4>Misinfos:</h4>
+{{ range $k, $v := .Misinfos}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_misinfo_subject', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+	{{ range $v }}
+		<textarea rows="1" class="list-input-box" cols="80">{{ .}}</textarea><button onclick="doAction('delete_misinfo', {t: '{{$k}}', m: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+	{{ end }}<br>
+	Add {{$k}} misinfo: <textarea rows="1" cols="80" id="add_misinfo_{{$k}}" name="add_misinfo_{{$k}}"></textarea><button onclick="doAction('add_misinfo', {t: '{{$k}}', m: document.getElementById('add_misinfo_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
+	</details>
+{{ end }}<br>
+Add subject: <input type="text" id="add_misinfo_subject" name="add_misinfo_subject"></input><button onclick="doAction('add_misinfo_subject', document.getElementById('add_misinfo_subject').value).then(() => {window.location.reload();});">➕</button><br>
+<!--<textarea cols="80" rows="5" id="misinfos" name="misinfos" disabled>{{ .Misinfos}}</textarea><button onclick="doAction('set_misinfos', document.getElementById('misinfos').value)" disabled>Save</button><br>-->
+<h3>Tools</h3>
+<!-- Tools are collapsed to avoid clutter -->
+<details><summary>Ask Question</summary>
+<!-- Prompt that doesn't save -->
+<h4>Prompt (doesn't save):</h4>
+<textarea cols="80" rows="5" id="temp_prompt" name="prompt">{{ .Prompt}}</textarea><br>
+<h4>Question:</h4>
+<textarea cols="80" rows="5" id="question" name="question"></textarea><button onclick="doAction('question', {q: document.getElementById('question').value, p: document.getElementById('temp_prompt').value})">Ask</button><br>
+</details><br>
+<button onclick="alert('Database will be rebuilt now! This can take *several minutes*, you\'ll get another alert upon completion.');doAction('rebuild_db');">Rebuild DB</button><br>
+`
+	tmpl, err := template.New("qa").Parse(templateString)
+	if err != nil {
+		onelib.Error.Println("Error parsing template:", err)
+		return ""
+	}
+
+	// Expertise and Misinfos are stored in files, so we need to read them in.
+	// Read the entire contents of the file into expertise
+	expertiseFile, err := os.Open("plugins/qa/expertise.json")
+	if err != nil {
+		onelib.Error.Println("Error opening expertise.json:", err)
+		return ""
+	}
+	defer expertiseFile.Close()
+	expertiseBytes, err := io.ReadAll(expertiseFile)
+	if err != nil {
+		onelib.Error.Println("Error reading expertise.json:", err)
+		return ""
+	}
+	expertise := make(map[string][]string)
+	err = json.Unmarshal(expertiseBytes, &expertise)
+	if err != nil {
+		onelib.Error.Println("Error decoding expertise.json:", err)
+		return ""
+	}
+
+	// Read the entire contents of the file into misinfos
+	misinfosFile, err := os.Open("plugins/qa/misinfos.json")
+	if err != nil {
+		onelib.Error.Println("Error opening misinfos.json:", err)
+		return ""
+	}
+	defer misinfosFile.Close()
+	misinfosBytes, err := io.ReadAll(misinfosFile)
+	if err != nil {
+		onelib.Error.Println("Error reading misinfos.json:", err)
+		return ""
+	}
+	misinfos := make(map[string][]string)
+	err = json.Unmarshal(misinfosBytes, &misinfos)
+	if err != nil {
+		onelib.Error.Println("Error decoding misinfos.json:", err)
+		return ""
+	}
+
+	templateVars := struct {
+		Name string
+		Prompt string
+		OpenAIKey string
+		Channels map[string][]string
+		ReplyToQuestions bool
+		ReplyToMentions bool
+		Expertise map[string][]string
+		Misinfos map[string][]string
+	}{
+		Name: LONGNAME,
+		Prompt: onelib.GetTextConfig(NAME, "prompt"),
+		OpenAIKey: onelib.GetTextConfig(NAME, "openai_key"),
+		Channels: getChannelsMap(),
+		ReplyToQuestions: onelib.GetBoolConfig(NAME, "reply_to_questions"),
+		ReplyToMentions: onelib.GetBoolConfig(NAME, "reply_to_mentions"),
+		Expertise: expertise,
+		Misinfos: misinfos,
+	}
+
+	var output bytes.Buffer
+	err = tmpl.Execute(&output, templateVars)
+	if err != nil {
+		onelib.Error.Println("Error executing template:", err)
+		return ""
+	}
+	return template.HTML(output.String())
+}
+
+func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) (string, error) {
+	return map[string]func(map[string]any) (string, error) {
+		"set_prompt": func(args map[string]any) (string, error) {
+			onelib.SetTextConfig(NAME, "prompt", args["v"].(string))
+			return "Prompt saved!", nil
+		},
+		"set_openai_key": func(args map[string]any) (string, error) {
+			onelib.SetTextConfig(NAME, "openai_key", args["v"].(string))
+			return "OpenAI Key saved!", nil
+		},
+		"set_replies": func(args map[string]any) (string, error) {
+			onelib.SetBoolConfig(NAME, "reply_to_questions", args["qs"].(bool))
+			onelib.SetBoolConfig(NAME, "reply_to_mentions", args["ms"].(bool))
+			return "Reply settings saved!", nil
+		},
+		"question": func(args map[string]any) (string, error) {
+			txt, err := runqa("-q", args["q"].(string), "question", "-p", args["p"].(string))
+			if err != nil {
+				onelib.Error.Println("Error running qa.py:", err)
+				return "", err
+			}
+			return txt, nil
+		},
+		"add_channel": func(args map[string]any) (string, error) {
+			channels := getChannelsMap()
+			proto := args["p"].(string)
+			channels[proto] = append(channels[proto], args["c"].(string))
+			channelsJson, err := json.Marshal(channels)
+			if err != nil {
+				onelib.Error.Println("[qa] Error encoding channels:", err)
+				return "", err
+			}
+			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
+			return fmt.Sprintf("[%s] Added channel: %s", proto, args["c"].(string)), nil
+		},
+		"delete_channel": func(args map[string]any) (string, error) {
+			channels := getChannelsMap()
+			proto := args["p"].(string)
+			for i, v := range channels[proto] {
+				if v == args["c"].(string) {
+					channels[proto] = append(channels[proto][:i], channels[proto][i+1:]...)
+					break
+				}
+			}
+			channelsJson, err := json.Marshal(channels)
+			if err != nil {
+				onelib.Error.Println("[qa] Error encoding channels:", err)
+				return "", err
+			}
+			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
+			return "", nil
+		},
+		"add_protocol": func(args map[string]any) (string, error) {
+			channels := getChannelsMap()
+			channels[args["v"].(string)] = make([]string, 0)
+			channelsJson, err := json.Marshal(channels)
+			if err != nil {
+				onelib.Error.Println("[qa] Error encoding channels:", err)
+				return "", err
+			}
+			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
+			return "", nil
+		},
+		"delete_protocol": func(args map[string]any) (string, error) {
+			channels := getChannelsMap()
+			delete(channels, args["v"].(string))
+			channelsJson, err := json.Marshal(channels)
+			if err != nil {
+				onelib.Error.Println("[qa] Error encoding channels:", err)
+				return "", err
+			}
+			onelib.SetTextConfig(NAME, "channels", string(channelsJson))
+			return "", nil
+		},
+		"add_misinfo": func(args map[string]any) (string, error) {
+			misinfos := getMisinfosMap()
+			topic := args["t"].(string)
+			misinfos[topic] = append(misinfos[topic], args["m"].(string))
+			err := saveMisinfosMap(misinfos)
+			if err != nil {
+				onelib.Error.Println("[qa] Error saving misinfos:", err)
+				return "", err
+			}
+			return "", nil
+		},
+		"delete_misinfo": func(args map[string]any) (string, error) {
+			misinfos := getMisinfosMap()
+			topic := args["t"].(string)
+			for i, v := range misinfos[topic] {
+				if v == args["m"].(string) {
+					misinfos[topic] = append(misinfos[topic][:i], misinfos[topic][i+1:]...)
+					break
+				}
+			}
+			err := saveMisinfosMap(misinfos)
+			if err != nil {
+				onelib.Error.Println("[qa] Error saving misinfos:", err)
+				return "", err
+			}
+			return "", nil
+		},
+		"add_misinfo_subject": func(args map[string]any) (string, error) {
+			misinfos := getMisinfosMap()
+			misinfos[args["v"].(string)] = make([]string, 0)
+			err := saveMisinfosMap(misinfos)
+			if err != nil {
+				onelib.Error.Println("[qa] Error saving misinfos:", err)
+				return "", err
+			}
+			return "", nil
+		},
+		"delete_misinfo_subject": func(args map[string]any) (string, error) {
+			misinfos := getMisinfosMap()
+			delete(misinfos, args["v"].(string))
+			err := saveMisinfosMap(misinfos)
+			if err != nil {
+				onelib.Error.Println("[qa] Error saving misinfos:", err)
+				return "", err
+			}
+			return "", nil
+		},
+		"rebuild_db": func(args map[string]any) (string, error) {
+			_, err := runqa("db")
+			if err != nil {
+				onelib.Error.Println("Error downloading db:", err)
+				return "", err
+			}
+			_, err = runqa("aidb")
+			if err != nil {
+				onelib.Error.Println("Error updating aidb:", err)
+				return "", err
+			}
+			return "DB rebuilt!", nil
+		},
+		"delete_expertise": func(args map[string]any) (string, error) {
+			url := args["e"].(string)
+			subject := args["t"].(string)
+			_, err := runqa("remove", "--url", url, "--subject", subject)
+			if err != nil {
+				onelib.Error.Println("Error removing expertise:", err)
+				return "", err
+			}
+			// Remove the expertise from expertise.json too
+			expertise, err := getExpertiseMap()
+			if err != nil {
+				onelib.Error.Println("Error getting expertise:", err)
+				return "", err
+			}
+			for i, v := range expertise[subject] {
+				if v == url {
+					expertise[subject] = append(expertise[subject][:i], expertise[subject][i+1:]...)
+					break
+				}
+			}
+			err = saveExpertiseMap(expertise)
+			if err != nil {
+				onelib.Error.Println("Error saving expertise:", err)
+				return "", err
+			}
+			return fmt.Sprintf("[%s] Removed: %s", subject, url), nil
+		},
+	}
 }
 
 type QuestionIndex struct {
@@ -112,23 +478,18 @@ type QuestionAnswer struct {
 type QAPlugin struct {
 	monitor   *onelib.Monitor
 	expertise []string
-	openaiKey string
-	prompt    string
 	channels  map[string][]string
-
-	replyToQuestions bool
-	replyToMentions  bool
 
 	lastMsg string
 
 	DbLock *sync.RWMutex
 }
 
-func (qa *QAPlugin) runqa(args ...string) (string, error) {
+func runqa(args ...string) (string, error) {
 	// Call the python script plugins/qa/qa.py, passing the openai key as an environment variable, and capturing the output.
-	_args := []string{"plugins/qa/qa.py", "-e", "plugins/qa/expertise.json", "-mi", "plugins/qa/misinfos.json", "-p", qa.prompt, "-db", "plugins/qa/db-noembed.csv", "-edb", "plugins/qa/db.csv"}
+	_args := []string{"plugins/qa/qa.py", "-e", "plugins/qa/expertise.json", "-mi", "plugins/qa/misinfos.json", "-db", "plugins/qa/db-noembed.csv", "-edb", "plugins/qa/db.csv"}
 	cmd := exec.Command("python3", append(_args, args...)...)
-	cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+qa.openaiKey)
+	cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+onelib.GetTextConfig(NAME, "openai_key"))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		onelib.Debug.Println("qa.py output:", string(out))
@@ -138,7 +499,7 @@ func (qa *QAPlugin) runqa(args ...string) (string, error) {
 }
 
 func (qa *QAPlugin) ask_question(msg onelib.Message, sender onelib.Sender) {
-	txt, err := qa.runqa("-q", msg.Text(), "question")
+	txt, err := runqa("-q", msg.Text(), "question", "-p", onelib.GetTextConfig(NAME, "prompt"))
 	if err != nil {
 		onelib.Error.Println("Error running qa.py:", err)
 		return
@@ -247,23 +608,17 @@ func (qa *QAPlugin) OnMessageWithText(from onelib.Sender, msg onelib.Message) {
 		return
 	}
 
-	ask := false
 	txt := strings.ToLower(msg.Text())
-	if qa.replyToMentions && msg.Mentioned() {
-		ask = true
-	}
-	if !ask && qa.replyToQuestions {
+	if onelib.GetBoolConfig(NAME, "reply_to_mentions") && msg.Mentioned() {
+		qa.ask_question(msg, from)
+	} else if onelib.GetBoolConfig(NAME, "reply_to_questions") {
 		// Check if txt contains any of the strings in qa.expertise, and ends in a question mark
 		for _, v := range qa.expertise {
 			if strings.Contains(txt, v) && strings.HasSuffix(txt, "?") {
-				ask = true
+				qa.ask_question(msg, from)
 				break
 			}
 		}
-	}
-
-	if ask {
-		qa.ask_question(msg, from)
 	}
 }
 

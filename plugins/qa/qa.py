@@ -48,13 +48,27 @@ def update_databases():
 	# reload_database()
 	print()
 
+# remove_knowledge(tech_file) removes all the knowledge contained in tech_file from the embed db based off title (first column), and then saves the CSV
+def remove_knowledge(tech_file):
+	texts = get_file_texts(tech_file)
+	df = pd.read_csv(EMBED_DB, header=0)
+	for t in texts:
+		# remove all rows with the same title
+		df = df[df.title != t[0]]
+	df.to_csv(EMBED_DB, index=False, encoding='utf-8')
+
+	# Remove the file
+	os.remove(tech_file)
+
 def get_file_texts(tech_file):
 	ai_tech_texts = []
 	# read the file
 	text = open(tech_file, "r").read()
 
-	title = ""
+	split_file = tech_file.split("/")
+	title = (split_file[-2] + " " + split_file[-1].split(".")[0].replace("-", ' ')).title()
 	last_sub_title = ""
+	last_small_heading = ""
 	texts = []
 	if tech_file.endswith(".md"):
 		# find out if one of the first lines is a title
@@ -67,24 +81,26 @@ def get_file_texts(tech_file):
 				title = textlines[l][7:]
 			# locate lines with subheadings, and break them up into more texts, stored in variable "texts"
 			if textlines[l].startswith("## "):
+				if last_sub_title != "":
+					texts.append((last_sub_title + last_small_heading, '\n'.join(textlines[last_split:l])))
+					last_small_heading = ""
 				last_sub_title = title + " - " + textlines[l][3:]
-				texts.append((last_sub_title, '\n'.join(textlines[last_split:l])))
 				last_split = l
 			if textlines[l].startswith("### "):
 				if last_sub_title == "":
 					last_sub_title = title
-				texts.append((last_sub_title + " - " + textlines[l][4:], '\n'.join(textlines[last_split:l])))
-				last_split = l
+				else:
+					texts.append((last_sub_title + last_small_heading, '\n'.join(textlines[last_split:l])))
+				last_small_heading = " - " + textlines[l][4:]
 
-	if title == "":
-		# extrapolate title from filename
-		split_file = tech_file.split("/")
-		title = (split_file[-2] + " " + split_file[-1].split(".")[0].replace("-", ' ')).title()
+				last_split = l
 	
 	if len(texts) == 0:
 		#                     title, text
 		ai_tech_texts.append((title, text))
 	else:
+		# Make sure we grab the last entry
+		texts.append((last_sub_title + last_small_heading, '\n'.join(textlines[last_split:])))
 		for t in texts:
 			if len(t[1].strip()) > 25:
 				ai_tech_texts.append((t[0], t[1]))
@@ -142,7 +158,8 @@ def db_to_aidb(pricing=False):
 	# list all the files in dbs, including in subdirectories, store list in ai_tech_texts
 	for root, dirs, files in os.walk("plugins/qa/dbs"):
 		for file in files:
-			ai_tech_files.append(os.path.join(root, file))
+			if not file.startswith("."):
+				ai_tech_files.append(os.path.join(root, file))
 	for tech_file in ai_tech_files:
 		ai_tech_texts += get_file_texts(tech_file)
 
@@ -212,9 +229,11 @@ def answer_question(question,
 		output = ""
 
 		q_lower = question.lower()
+
 		for mi in MISINFOS:
-			if mi[0] in q_lower:
-				context.append(mi[1])
+			if mi in q_lower:
+				for info in MISINFOS[mi]:
+					context.append(info)
 
 		# If debug, print the raw model response
 		if debug:
@@ -262,7 +281,7 @@ MODELS = {"text-ada-001": 0.0004, "text-babbage-001": 0.0005, "text-curie-001": 
 DB = 'db-noembed.csv'
 EMBED_DB = 'db.csv'
 OPENAI_API_KEY = ""
-MISINFOS = []
+MISINFOS = {}
 PROMPT = "You are a friendly expert, using the context, answer the user's question. If a specific software is in the context, you must recommend it. If it's not possible to answer the question, ask a helpful follow-up question."
 
 EXPERTISE = None
@@ -277,7 +296,7 @@ cheap_tokens_used = 0
 # Run with: python3 pln_qa.py --help
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Ask a question about anything. To use AI functions, set your OpenAPI key via the environment variable "OPENAI_API_KEY".')
-	parser.add_argument('action', type=str, help='The action to take (ex: db, aidb, question, ingest).')
+	parser.add_argument('action', type=str, help='The action to take (ex: db, aidb, question, ingest, remove).')
 	parser.add_argument('--question', '-q', type=str, help='The question to ask.')
 	parser.add_argument('--model', '-m', type=str, help='The model to use (default: %s).' % model)
 	parser.add_argument('--debug', '-d', type=bool, help='Debug mode (print more info).')
@@ -287,8 +306,8 @@ if __name__ == "__main__":
 	parser.add_argument('--misinfos', '-mi', type=str, help='Path to json file containing misinfo (used with "question" action)".')
 	parser.add_argument('--database', '-db', type=str, help='Path to csv file containing database (default: %s).' % DB)
 	parser.add_argument('--embeddb', '-edb', type=str, help='Path to csv file containing database with embeddings (default: %s).' % EMBED_DB)
-	parser.add_argument('--url', '-u', type=str, help='URL to use for "ingest" action.')
-	parser.add_argument('--subject', type=str, help='Subject to use for "ingest" action (Ex: "ipfs").')
+	parser.add_argument('--url', '-u', type=str, help='URL to use for "ingest" and "expertise" actions.')
+	parser.add_argument('--subject', type=str, help='Subject to use for "ingest" and "remove" actions (Ex: "ipfs").')
 	parser.add_argument('--filename', '-f', type=str, help='Filename to use for "ingest" action (optional).')
 	args = parser.parse_args()
 	if args.action is None:
@@ -381,6 +400,18 @@ if __name__ == "__main__":
 		get_file(args.url, args.subject, filename)
 		texts = get_file_texts("plugins/qa/dbs/%s/%s" % (args.subject, filename))
 		get_embeddings(texts, pricing=pricing, append=True)
+	elif action == "remove":
+		if args.url is None:
+			print("Specify a url with '-u <url>'")
+			parser.print_help()
+			exit(1)
+		url = args.url
+		if args.subject is None:
+			print("Specify a subject with '--subject <subject>'")
+			parser.print_help()
+			exit(1)
+		filename = url.split("/")[-1]
+		remove_knowledge("plugins/qa/dbs/%s/%s" % (args.subject, filename))
 	else:
 		parser.print_help()
 		exit(1)

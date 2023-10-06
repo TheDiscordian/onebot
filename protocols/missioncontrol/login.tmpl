@@ -1,0 +1,14 @@
+{{ template "header" .}}
+<!-- Standard HTML login form, POSTs to /login -->
+<form action="/login" method="post">
+	<div class="form-group">
+		<label for="username">Username</label>
+		<input type="text" placeholder="Username" name="username" id="username">
+	</div>
+	<div class="form-group">
+		<label for="password">Password</label>
+		<input type="password" placeholder="Password" name="password" id="password">
+	</div>
+	<button type="submit">Login</button>
+</form>
+{{ template "footer"}}

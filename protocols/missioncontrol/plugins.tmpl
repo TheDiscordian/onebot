@@ -1,0 +1,43 @@
+{{ template "header" .}}
+			<script>
+				async function pluginSelect(select) {
+					var value = select.value;
+					let pluginHtmlObj = document.getElementById("plugin-html");
+					if (value == "none") {
+						pluginHtmlObj.innerHTML = "";
+						return;
+					}
+					// Make sure value is URL escaped
+					value = encodeURIComponent(value);
+					pluginHtmlObj.innerHTML = "<p>Loading...</p>";
+					let response = await fetch("/plugin?name=" + value);
+					pluginHtmlObj.innerHTML = await response.text();
+				}
+
+				async function doAction(action, data) {
+					if (typeof(data) == "string" || typeof(data) == "number") {
+						data = {"v": data};
+					}
+					let response = await fetch("/do?plugin=" + encodeURIComponent(document.getElementById("pluginSelect").value) + "&action=" + action + "&data=" + encodeURIComponent(JSON.stringify(data)));
+					let responseText = await response.text();
+					if (responseText != "") {
+						alert(responseText);
+					} else {
+						alert("Action completed successfully.");
+					}
+				}
+			</script>
+
+			<h1>Plugins</h1>
+			<p>This section is for interacting with supported plugins. Not all plugins are supported, so don't be surprised if you don't see some plugins here.</p>
+			<p onload=""><select class="plugin-select" id="pluginSelect" onchange="pluginSelect(this)">
+				<option value="none">Select Plugin</option>
+				{{ range .Plugins }}
+					<option value="{{ . }}">{{ . }}</option>
+				{{ end }}
+			</select></p>
+			<div id="plugin-html"></div>
+			<script>
+				pluginSelect(document.getElementById('pluginSelect'));
+			</script>
+{{ template "footer"}}

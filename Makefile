@@ -17,7 +17,7 @@ build: plugins protocols
 rel: build
 	mkdir -p bin/release/plugins
 	mkdir -p bin/release/protocols
-	cp onebot.sample.toml bin/release/onebot.toml
+	cp onebot.sample.toml bin/release/onebot.sample.toml
 	mv bin/onebot bin/release/onebot
 	mv plugins/*.so bin/release/plugins
 	cp -R plugins/qa bin/release/plugins
