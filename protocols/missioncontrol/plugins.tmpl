@@ -18,12 +18,22 @@
 					if (typeof(data) == "string" || typeof(data) == "number") {
 						data = {"v": data};
 					}
+
+					// Disable every button on the page
+					let buttons = document.getElementsByTagName("button");
+					for (let i = 0; i < buttons.length; i++) {
+						buttons[i].disabled = true;
+					}
+
 					let response = await fetch("/do?plugin=" + encodeURIComponent(document.getElementById("pluginSelect").value) + "&action=" + action + "&data=" + encodeURIComponent(JSON.stringify(data)));
 					let responseText = await response.text();
 					if (responseText != "") {
 						alert(responseText);
 					} else {
 						alert("Action completed successfully.");
+					}
+					for (let i = 0; i < buttons.length; i++) {
+						buttons[i].disabled = false;
 					}
 				}
 			</script>
