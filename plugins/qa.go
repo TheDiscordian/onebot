@@ -211,7 +211,6 @@ Add subject: <input type="text" id="add_expertise_subject" name="add_expertise_s
 	</details>
 {{ end }}<br>
 Add subject: <input type="text" id="add_misinfo_subject" name="add_misinfo_subject"></input><button onclick="doAction('add_misinfo_subject', document.getElementById('add_misinfo_subject').value).then(() => {window.location.reload();});">➕</button><br>
-<!--<textarea cols="80" rows="5" id="misinfos" name="misinfos" disabled>{{ .Misinfos}}</textarea><button onclick="doAction('set_misinfos', document.getElementById('misinfos').value)" disabled>Save</button><br>-->
 <h3>Tools</h3>
 <!-- Tools are collapsed to avoid clutter -->
 <details><summary>Ask Question</summary>
@@ -221,7 +220,7 @@ Add subject: <input type="text" id="add_misinfo_subject" name="add_misinfo_subje
 <h4>Question:</h4>
 <textarea cols="80" rows="5" id="question" name="question"></textarea><button onclick="doAction('question', {q: document.getElementById('question').value, p: document.getElementById('temp_prompt').value})">Ask</button><br>
 </details><br>
-<button onclick="alert('Database will be rebuilt now! This can take *several minutes*, you\'ll get another alert upon completion.');doAction('rebuild_db');">Rebuild DB</button><br>
+<button onclick="if (confirm('Database will be rebuilt now! This can take *several minutes*, you\'ll get another alert upon completion.')){doAction('rebuild_db');}">Rebuild DB</button><br>
 `
 	tmpl, err := template.New("qa").Parse(templateString)
 	if err != nil {
