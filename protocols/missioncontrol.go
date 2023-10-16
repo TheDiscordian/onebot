@@ -100,6 +100,7 @@ func Load() onelib.Protocol {
 	http.HandleFunc("/do", doPluginAction)
 	http.HandleFunc("/adduser", addUserHandler)
 	http.HandleFunc("/deleteuser", deleteUserHandler)
+	http.HandleFunc("/changepass", changePassHandler)
 
 	go http.ListenAndServe(fmt.Sprintf("localhost:%d", MissionControlPort), nil)
 	return onelib.Protocol(&MissionControl{})
@@ -334,6 +335,46 @@ func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	Users.Del(username)
 	fmt.Fprintf(w, username)
+}
+
+func changePassHandler(w http.ResponseWriter, r *http.Request) {
+	if !loggedIn(r) {
+		serveLogin(w, r)
+		return
+	}
+
+	// Get username from cookie
+	username, err := r.Cookie("username")
+	if err != nil {
+		fmt.Fprintf(w, "Internal server error.")
+		return
+	}
+
+	// Get passwords from form/POST value
+	password := r.FormValue("password")
+	oldpassword := r.FormValue("oldpassword")
+
+	u := Users.Get(username.Value)
+	if u == nil {
+		fmt.Fprintf(w, "Internal server error.")
+		return
+	}
+
+	// Verify oldpassword matches current password
+	if !userMatchesPassword(username.Value, oldpassword) {
+		fmt.Fprintf(w, "Old password incorrect.")
+		return
+	}
+
+	u.Password = sha256.Sum256([]byte(password))
+	// Reset the session to destroy old sessions
+	u.Session = GenerateSecureToken(32)
+	Users.Set(username.Value, u)
+
+	// Set the session cookie
+	http.SetCookie(w, &http.Cookie{Name: "session", Value: u.Session, SameSite: http.SameSiteStrictMode, Secure: true, HttpOnly: true})
+
+	fmt.Fprintf(w, "Password changed successfully!")
 }
 
 func addUserHandler(w http.ResponseWriter, r *http.Request) {

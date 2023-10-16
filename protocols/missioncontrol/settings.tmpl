@@ -1,27 +1,25 @@
 {{ template "header" .}}
 <script>
-	function verifyPass() {
-		let passObj = document.getElementById('password');
+	function verifyPass(confirmPassObj, passObj, errorObj, confirmObj) {
 		let password = passObj.value;
-		let confirmPassObj = document.getElementById('confirmpassword');
 		if (password.length > 11 && password == confirmPassObj.value) {
 			confirmPassObj.style.color = 'green';
 			confirmPassObj.style.borderColor = 'green';
 			passObj.style.color = 'green';
 			passObj.style.borderColor = 'green';
-			document.getElementById('errorBox').hidden = true;
-			document.getElementById('createUserButton').disabled = false;
+			errorObj.hidden = true;
+			confirmObj.disabled = false;
 		} else {
 			confirmPassObj.style.color = 'red';
 			confirmPassObj.style.borderColor = 'red';
 			passObj.style.color = 'red';
 			passObj.style.borderColor = 'red';
-			document.getElementById('createUserButton').disabled = true;
-			document.getElementById('errorBox').hidden = false;
+			confirmObj.disabled = true;
+			errorObj.hidden = false;
 			if (password.length < 12) {
-				document.getElementById('error').innerText = 'Password must be at least 12 characters long.';
+				errorObj.children[0].innerText = 'Password must be at least 12 characters long.';
 			} else if (password != confirmPassObj.value) {
-				document.getElementById('error').innerText = 'Passwords do not match.';
+				errorObj.children[0].innerText = 'Passwords do not match.';
 			}
 		}
 	}
@@ -43,7 +41,26 @@
 	}
 
 </script>
-<h1>Settings</h1>
+<h1>Personal Settings</h1>
+<h2>Change Password</h2>
+<form class="login-form" action="/changepass" method="post">
+	<div class="form-group">
+		<label for="oldpassword">Old Password</label>
+		<input type="password" placeholder="Old Password" name="oldpassword" id="oldpassword">
+	</div>
+	<div class="form-group">
+		<label for="newpassword">New Password</label>
+		<input type="password" placeholder="New Password" name="password" id="newpassword" oninput="verifyPass(document.getElementById('confirmnewpassword'), this, document.getElementById('confirmErrorBox'), document.getElementById('changePasswordButton'));">
+	</div>
+	<!-- Add a confim password field which must match the password field for the submit button to be pressed -->
+	<div class="form-group">
+		<label for="confirmpassword">Confirm Password</label>
+		<input type="password" placeholder="Confirm Password" name="confirmpassword" id="confirmnewpassword" oninput="verifyPass(this, document.getElementById('newpassword'), document.getElementById('confirmErrorBox'), document.getElementById('changePasswordButton'));">
+	</div>
+	<button type="submit" id="changePasswordButton" disabled>Change Password</button>
+</form>
+<p id="confirmErrorBox" class="error-box" hidden>Error: <span id="error"></span></p>
+<h1>Global Settings</h1>
 <h2>Add User</h2>
 <form class="login-form" action="/adduser" method="post">
 	<div class="form-group">
@@ -52,12 +69,12 @@
 	</div>
 	<div class="form-group">
 		<label for="password">Password</label>
-		<input type="password" placeholder="Password" name="password" id="password" oninput="verifyPass();">
+		<input type="password" placeholder="Password" name="password" id="password" oninput="verifyPass(document.getElementById('confirmpassword'), this, document.getElementById('errorBox'), document.getElementById('createUserButton'));">
 	</div>
 	<!-- Add a confim password field which must match the password field for the submit button to be pressed -->
 	<div class="form-group">
 		<label for="confirmpassword">Confirm Password</label>
-		<input type="password" placeholder="Confirm Password" name="confirmpassword" id="confirmpassword" oninput="verifyPass();">
+		<input type="password" placeholder="Confirm Password" name="confirmpassword" id="confirmpassword" oninput="verifyPass(this, document.getElementById('password'), document.getElementById('errorBox'), document.getElementById('createUserButton'));">
 	</div>
 	<button type="submit" id="createUserButton" disabled>Create User</button>
 </form>
