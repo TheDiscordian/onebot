@@ -108,9 +108,20 @@ func getChannelsMap() map[string][]string {
 }
 
 func getMisinfosMap() map[string][]string {
-	misinfosJson := onelib.GetTextConfig(NAME, "misinfos")
+	// misinfos are stored in plugins/qa/misinfos.json
+	misinfosFile, err := os.Open("plugins/qa/misinfos.json")
+	if err != nil {
+		onelib.Error.Println("[qa] Error opening misinfos.json:", err)
+		return nil
+	}
+	defer misinfosFile.Close()
+	misinfosBytes, err := io.ReadAll(misinfosFile)
+	if err != nil {
+		onelib.Error.Println("[qa] Error reading misinfos.json:", err)
+		return nil
+	}
 	misinfos := make(map[string][]string)
-	err := json.Unmarshal([]byte(misinfosJson), &misinfos)
+	err = json.Unmarshal(misinfosBytes, &misinfos)
 	if err != nil {
 		onelib.Error.Println("[qa] Error decoding misinfos:", err)
 		return nil
@@ -181,9 +192,9 @@ func (qamc *QAMissionControlPlugin) HTML() template.HTML {
 <textarea cols="80" rows="5" id="prompt" name="prompt">{{ .Prompt}}</textarea><button onclick="doAction('set_prompt', document.getElementById('prompt').value)">Save</button><br>
 <h4>Channels</h4>
 <span>Channels to monitor:</span><br>
-{{ range $k, $v := .Channels}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_protocol', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+{{ range $k, $v := .Channels}}<details><summary><b>{{ $k }} <button onclick="if (confirm('Are you sure you want to stop monitoring channels on {{$k}}? This action cannot be undone.')){doAction('delete_protocol', '{{$k}}').then(() => {window.location.reload();});}">❌</button></b></summary>
 	{{ range $v }}
-		<input class="list-input-box" type="text" value="{{ .}}"></input><button onclick="doAction('delete_channel', {p: '{{$k}}', c: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+		<input class="list-input-box" type="text" value="{{ .}}"></input><button onclick="if (confirm('Are you sure you want to stop monitoring this channel?')){doAction('delete_channel', {p: '{{$k}}', c: '{{.}}'}).then(() => {window.location.reload();});}">❌</button><br>
 	{{ end }}<br>
 	Add {{$k}} channel: <input type="text" id="add_channel_{{$k}}" name="add_channel_{{$k}}"></input><button onclick="doAction('add_channel', {p: '{{$k}}', c: document.getElementById('add_channel_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
 	</details>
@@ -194,18 +205,18 @@ Add protocol: <input type="text" id="add_protocol" name="add_protocol"></input><
 <span>Reply to mentions:</span><input type="checkbox" id="reply_to_mentions" name="reply_to_mentions" {{ if .ReplyToMentions}}checked{{ end }}><br>
 <button onclick="doAction('set_replies', {qs: document.getElementById('reply_to_questions').checked, ms: document.getElementById('reply_to_mentions').checked})">Save</button><br>
 <h4>Expertise:</h4>
-{{ range $k, $v := .Expertise}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_expertise_subject', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+{{ range $k, $v := .Expertise}}<details><summary><b>{{ $k }} <button onclick="if (confirm('Are you sure you want to delete all information about {{$k}}? This action cannot be undone.')){doAction('delete_expertise_subject', '{{$k}}').then(() => {window.location.reload();});}">❌</button></b></summary>
 	{{ range $v }}
-		<input class="list-input-box" size="80" type="text" value="{{ .}}"></input><button onclick="doAction('delete_expertise', {t: '{{$k}}', e: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+		<input class="list-input-box" size="80" type="text" value="{{ .}}"></input><button onclick="if (confirm('Are you sure you want to delete this expertise?')){doAction('delete_expertise', {t: '{{$k}}', e: '{{.}}'}).then(() => {window.location.reload();});}">❌</button><br>
 	{{ end }}<br>
 	Add {{$k}} expertise: <input type="text" size="80" id="add_expertise_{{$k}}" name="add_expertise_{{$k}}"></input><button onclick="doAction('add_expertise', {t: '{{$k}}', e: document.getElementById('add_expertise_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
 	</details>
 {{ end }}<br>
 Add subject: <input type="text" id="add_expertise_subject" name="add_expertise_subject"></input><button onclick="doAction('add_expertise_subject', document.getElementById('add_expertise_subject').value).then(() => {window.location.reload();});">➕</button><br>
 <h4>Misinfos:</h4>
-{{ range $k, $v := .Misinfos}}<details><summary><b>{{ $k }} <button onclick="doAction('delete_misinfo_subject', '{{$k}}').then(() => {window.location.reload();});">❌</button></b></summary>
+{{ range $k, $v := .Misinfos}}<details><summary><b>{{ $k }} <button onclick="if (confirm('Are you sure you want to delete all misinfos about {{$k}}?')){doAction('delete_misinfo_subject', '{{$k}}').then(() => {window.location.reload();});}">❌</button></b></summary>
 	{{ range $v }}
-		<textarea rows="1" class="list-input-box" cols="80">{{ .}}</textarea><button onclick="doAction('delete_misinfo', {t: '{{$k}}', m: '{{.}}'}).then(() => {window.location.reload();});">❌</button><br>
+		<textarea rows="1" class="list-input-box" cols="80">{{ .}}</textarea><button onclick="if (confirm('Are you sure you want to delete this misinfo?')){doAction('delete_misinfo', {t: '{{$k}}', m: '{{.}}'}).then(() => {window.location.reload();});}">❌</button><br>
 	{{ end }}<br>
 	Add {{$k}} misinfo: <textarea rows="1" cols="80" id="add_misinfo_{{$k}}" name="add_misinfo_{{$k}}"></textarea><button onclick="doAction('add_misinfo', {t: '{{$k}}', m: document.getElementById('add_misinfo_{{$k}}').value}).then(() => {window.location.reload();});">➕</button><br>
 	</details>
@@ -456,6 +467,31 @@ func (qamc *QAMissionControlPlugin) Functions() map[string]func(map[string]any) 
 				return "", err
 			}
 			return fmt.Sprintf("[%s] Removed: %s", subject, url), nil
+		},
+		"add_expertise": func(args map[string]any) (string, error) {
+			url := args["e"].(string)
+			subject := args["t"].(string)
+			_, err := runqa("ingest", "--url", url, "--subject", subject)
+			if err != nil {
+				onelib.Error.Println("Error adding expertise:", err)
+				return "", err
+			}
+			// Add the expertise to expertise.json too
+			expertise, err := getExpertiseMap()
+			if err != nil {
+				onelib.Error.Println("Error getting expertise:", err)
+				return "", err
+			}
+			expertise[subject] = append(expertise[subject], url)
+			err = saveExpertiseMap(expertise)
+			if err != nil {
+				onelib.Error.Println("Error saving expertise:", err)
+				return "", err
+			}
+			return fmt.Sprintf("[%s] Added: %s", subject, url), nil
+		},
+		"delete_expertise_subject": func(args map[string]any) (string, error) {
+			return "Not yet implemented", nil
 		},
 	}
 }
