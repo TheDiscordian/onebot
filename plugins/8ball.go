@@ -6,65 +6,70 @@ import (
 	"fmt"
 	"github.com/TheDiscordian/onebot/onelib"
 	"math/rand"
+	"strings"
 )
 
 const (
-	// NAME is same as filename, minus extension
-	NAME = "8ball"
-	// LONGNAME is what's presented to the user
+	NAME     = "8ball"
 	LONGNAME = "8Ball Plugin"
-	// VERSION of the plugin
-	VERSION = "v0.0.0"
+	VERSION  = "v0.0.1"
 )
 
-// Load returns the Plugin object.
-func Load() onelib.Plugin {
-	return new(EightBallPlugin)
+var eightballAnswers = []string{
+	"As I see it, yes", "It is certain", "It is decidedly so", "Most likely",
+	"Outlook good", "Signs point to yes", "Without a doubt", "Yes", "Yes, definitely",
+	"You may rely on it", "Reply hazy, try again", "Ask again later",
+	"Better not tell you now", "Cannot predict now", "Concentrate and ask again",
+	"Don't count on it", "My reply is no", "My sources say no", "Outlook not so good",
+	"Very doubtful", "Never ask that question again"
 }
 
 func eightball(msg onelib.Message, sender onelib.Sender) {
 	var formattedText string
 	text := msg.Text()
-	if len(text) < 3 {
+
+	if strings.HasPrefix(text, "add ") {
+		newAnswer := strings.TrimPrefix(text, "add ")
+		eightballAnswers = append(eightballAnswers, newAnswer)
+		text = "Added new response."
+	} else if strings.HasPrefix(text, "remove ") {
+		remAnswer := strings.TrimPrefix(text, "remove ")
+		for i, answer := range eightballAnswers {
+			if answer == remAnswer {
+				eightballAnswers = append(eightballAnswers[:i], eightballAnswers[i+1:]...)
+				text = "Removed response."
+				break
+			}
+		}
+	} else if len(text) < 3 {
 		text = fmt.Sprintf("Predicts the future. Usage: %s8ball `<y/n question>`", onelib.DefaultPrefix)
 		formattedText = fmt.Sprintf("Predicts the future. Usage: <code>%s8ball &lt;y/n question&gt;</code>", onelib.DefaultPrefix)
 	} else {
-		eightballAnswers := []string{"As I see it, yes", "It is certain", "It is decidedly so", "Most likely",
-			"Outlook good", "Signs point to yes", "Without a doubt", "Yes", "Yes, definitely",
-			"You may rely on it", "Reply hazy, try again", "Ask again later",
-			"Better not tell you now", "Cannot predict now", "Concentrate and ask again",
-			"Don't count on it", "My reply is no", "My sources say no", "Outlook not so good",
-			"Very doubtful"}
 		randn := rand.Intn(len(eightballAnswers))
 		text = eightballAnswers[randn] + "."
-		formattedText = text
 	}
+
+	formattedText = text
 	sender.Location().SendFormattedText(text, formattedText)
 }
 
-// EightBallPlugin is an object for satisfying the Plugin interface.
 type EightBallPlugin int
 
-// Name returns the name of the plugin, usually the filename.
 func (eb *EightBallPlugin) Name() string {
 	return NAME
 }
 
-// LongName returns the display name of the plugin.
 func (eb *EightBallPlugin) LongName() string {
 	return LONGNAME
 }
 
-// Version returns the version of the plugin, usually in the format of "v0.0.0".
 func (eb *EightBallPlugin) Version() string {
 	return VERSION
 }
 
-// Implements returns a map of commands and monitor the plugin implements.
 func (eb *EightBallPlugin) Implements() (map[string]onelib.Command, *onelib.Monitor) {
 	return map[string]onelib.Command{"8b": eightball, "8ball": eightball}, nil
 }
 
-// Remove is necessary to satisfy the Plugin interface, it does nothing.
 func (eb *EightBallPlugin) Remove() {
 }
