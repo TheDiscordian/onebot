@@ -1,6 +1,6 @@
 module github.com/TheDiscordian/onebot
 
-go 1.18
+go 1.24.0
 
 require (
 	github.com/bluesky-social/indigo v0.0.0-20230425215957-9d6296d50061
@@ -10,7 +10,7 @@ require (
 	github.com/pelletier/go-toml v1.9.3
 	github.com/syndtr/goleveldb v1.0.0
 	go.mongodb.org/mongo-driver v1.7.0
-	golang.org/x/text v0.21.0
+	golang.org/x/text v0.31.0
 	mvdan.cc/xurls/v2 v2.5.0
 )
 
@@ -52,8 +52,8 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
